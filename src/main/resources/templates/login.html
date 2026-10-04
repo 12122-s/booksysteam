@@ -32,10 +32,6 @@
         </div>
       </div>
 
-      <div class="flash flash-warn" th:if="${defaultPassword}">
-        <span>当前还在使用初始密码 123456，登录后请到「系统设置」里修改。</span>
-      </div>
-
       <form method="post" class="login-form" th:action="@{/login}">
         <input type="hidden" name="csrf_token" th:value="${csrfToken}">
         <input type="hidden" name="next" th:value="${next}">

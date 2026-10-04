@@ -43,15 +43,8 @@ public class AuthController {
         this.bootToken = bootToken;
     }
 
-    /** 是否还在用初始密码 123456（登录页上提醒）。 */
-    private boolean isDefaultPassword() {
-        String hashed = settings.getAdminPasswordHash();
-        return hashed.isEmpty() || PasswordUtil.check(hashed, "123456");
-    }
-
     @GetMapping("/login")
     public String loginPage(@RequestParam(required = false) String next, Model model) {
-        model.addAttribute("defaultPassword", isDefaultPassword());
         String adminAccount = settings.get("admin_account");
         if (adminAccount == null || adminAccount.isBlank()) {
             adminAccount = "admin";
