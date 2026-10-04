@@ -1,0 +1,32 @@
+# ============================================================
+# Java 版图书管理系统 · 并行试用（Docker）
+#   - 独立新库 library_java，服务器上 Python 版用的 library_system 不受影响
+#   - 宿主机端口 8081（Python 版占 8080）
+#   - network_mode: host 让容器直接连宿主机的 MySQL（127.0.0.1:3306），
+#     也避免给 MySQL 开远程账号；对外直接监听 8081
+#
+# 用法（在服务器的 ~/library-java 目录下）：
+#   1) 把下面 LIB_DB_PASSWORD 改成虚拟机 MySQL 的 root 密码
+#   2) docker compose up -d --build
+#   3) 浏览器打开 http://服务器IP:8081   管理员 admin / 初始密码 123456
+#   看日志：docker logs -f library-java
+#   停止：  docker compose down
+# ============================================================
+services:
+  library-java:
+    build: .
+    container_name: library-java
+    network_mode: host
+    environment:
+      LIB_DB_HOST: 127.0.0.1
+      LIB_DB_PORT: "3306"
+      LIB_DB_USER: root
+      LIB_DB_PASSWORD: "你的MySQL密码"      # <-- 改这里
+      LIB_DB_NAME: library_java             # 并行试用专用新库，Python 版用的是 library_system
+      SERVER_PORT: "8081"
+      TZ: Asia/Shanghai
+    volumes:
+      # 封面/收款码上传、每日自动备份落在宿主机目录，容器重建不丢数据
+      - ./uploads:/app/uploads
+      - ./backups:/app/backups
+    restart: unless-stopped
