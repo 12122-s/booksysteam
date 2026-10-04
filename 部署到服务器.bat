@@ -25,8 +25,8 @@ set /p SUSER=      输入服务器用户名（如 root）：
 if "%SUSER%"=="" set SUSER=root
 
 echo [3/3] 正在上传到 %SUSER%@%SERVER%:~/library-java/ ...
-ssh %SUSER%@%SERVER% "mkdir -p ~/library-java"
-scp "%~dp0target\booksysteam-1.0.0.jar" %SUSER%@%SERVER%:~/library-java/
+ssh %SUSER%@%SERVER% "mkdir -p ~/library-java/target"
+scp "%~dp0target\booksysteam-1.0.0.jar" %SUSER%@%SERVER%:~/library-java/target/
 scp "%~dp0deploy\start.sh" "%~dp0Dockerfile" "%~dp0docker-compose.yml" %SUSER%@%SERVER%:~/library-java/
 if errorlevel 1 (
   echo [错误] 上传失败，请确认 ssh 能连通、用户名密码正确。
