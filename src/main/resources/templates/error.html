@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, '', '出错了')}">
+<body>
+<div id="content">
+
+<div class="card">
+  <div class="card-body" style="text-align:center;padding:52px 20px;">
+    <div style="font-size:44px;">😕</div>
+    <h1 class="page-title" style="margin-top:10px;" th:text="${code}">500</h1>
+    <p class="page-desc" style="font-size:14px;" th:text="${message}">出错了</p>
+    <div class="page-actions" style="justify-content:center;margin-top:18px;">
+      <a class="btn btn-primary" href="/">返回工作台</a>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

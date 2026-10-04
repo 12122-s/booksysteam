@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: readerLayout(~{::#content}, 'login', '找回密码', false)}">
+<body>
+<div id="content">
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">忘记密码</h2></div>
+    <div class="card-body">
+      <p class="page-desc" style="margin-top:0;">
+        填上你的<b>借书卡号</b>或<b>手机号</b>，系统会生成一个 6 位验证码。
+      </p>
+      <form method="post" th:action="@{/reader/forgot}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+        <label class="field-label" for="account">借书卡号 或 手机号</label>
+        <input class="input input-lg" id="account" name="account" required="required" autofocus="autofocus"
+               th:value="${param.account != null ? param.account[0] : ''}" placeholder="请输入借书卡号或手机号">
+        <div class="page-actions" style="margin-top:16px;">
+          <button class="btn btn-primary btn-lg btn-block" type="submit">获取验证码</button>
+        </div>
+      </form>
+      <div class="field-hint" style="margin-top:10px;">
+        图书室配置了发件邮箱的话，验证码会直接发到你的邮箱；<br>
+        没有收到也没关系：打电话或到图书室找管理员，核对身份后他会把验证码告诉你（10 分钟内有效）。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <a th:href="@{/login}">← 返回登录</a>
+      ·
+      <a th:href="@{/reader/signup}">还没有借书卡？去办卡</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

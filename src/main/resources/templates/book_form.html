@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'books', ${book != null ? '编辑图书' : '新增图书'})}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title" th:text="${book != null ? '编辑图书' : '新增图书'}">新增图书</h1>
+      <p class="page-desc"
+         th:text="${book != null ? '修改后点最下面的保存按钮生效。' : '只有书名和总册数是必填的，其他可以以后再补。'}">只有书名和总册数是必填的，其他可以以后再补。</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" th:href="@{/books}">← 返回图书列表</a>
+    </div>
+  </div>
+
+  <form method="post" th:action="${book != null} ? @{/books/{id}/edit(id=${book.id})} : @{/books/new}">
+    <input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">图书信息</h2></div>
+      <div class="card-body">
+        <div class="grid-form">
+          <div class="full">
+            <label class="field-label" for="title">书名 <span class="text-danger">*</span></label>
+            <input class="input" id="title" name="title" required="required"
+                   th:value="${book != null ? book.title : (form != null and form['title'] != null ? form['title'] : '')}"
+                   placeholder="请输入书名"/>
+          </div>
+          <div>
+            <label class="field-label" for="author">作者</label>
+            <input class="input" id="author" name="author"
+                   th:value="${book != null ? book.author : (form != null and form['author'] != null ? form['author'] : '')}"
+                   placeholder="请输入作者"/>
+          </div>
+          <div>
+            <label class="field-label" for="category">分类</label>
+            <input class="input" id="category" name="category" list="cat-list"
+                   th:value="${book != null ? book.category : (form != null and form['category'] != null ? form['category'] : '')}"
+                   placeholder="请输入或选择分类"/>
+            <datalist id="cat-list">
+              <option value="文学小说"></option><option value="科幻"></option>
+              <option value="历史"></option><option value="科普"></option>
+              <option value="儿童读物"></option><option value="社会科学"></option>
+            </datalist>
+          </div>
+          <div>
+            <label class="field-label" for="isbn">ISBN（书号）</label>
+            <input class="input" id="isbn" name="isbn"
+                   th:value="${book != null ? book.isbn : (form != null and form['isbn'] != null ? form['isbn'] : '')}"
+                   placeholder="书背面条形码下面的数字"/>
+          </div>
+          <div>
+            <label class="field-label" for="publisher">出版社</label>
+            <input class="input" id="publisher" name="publisher"
+                   th:value="${book != null ? book.publisher : (form != null and form['publisher'] != null ? form['publisher'] : '')}"/>
+          </div>
+          <div>
+            <label class="field-label" for="publish_year">出版年份</label>
+            <input class="input" id="publish_year" name="publish_year" inputmode="numeric"
+                   th:value="${book != null and book.publishYear != null and book.publishYear != 0 ? book.publishYear : (form != null and form['publish_year'] != null and form['publish_year'] != '' ? form['publish_year'] : '')}"
+                   placeholder="例如：2008"/>
+          </div>
+          <div>
+            <label class="field-label" for="price">单价（元）</label>
+            <input class="input" id="price" name="price" inputmode="decimal"
+                   th:value="${book != null and book.price != null and book.price != 0 ? book.price : (form != null and form['price'] != null and form['price'] != '' ? form['price'] : '')}"
+                   placeholder="例如：23"/>
+          </div>
+          <div>
+            <label class="field-label" for="location">馆藏位置</label>
+            <input class="input" id="location" name="location"
+                   th:value="${book != null ? book.location : (form != null and form['location'] != null ? form['location'] : '')}"
+                   placeholder="例如：A-01（书架编号）"/>
+            <div class="field-hint">建议按书架编号填，方便找书。</div>
+          </div>
+          <div>
+            <label class="field-label" for="total_copies">总册数 <span class="text-danger">*</span></label>
+            <input class="input" id="total_copies" name="total_copies" inputmode="numeric"
+                   th:value="${book != null and book.totalCopies != null and book.totalCopies != 0 ? book.totalCopies : (form != null and form['total_copies'] != null and form['total_copies'] != '' ? form['total_copies'] : 1)}"/>
+            <div class="field-hint">
+              <th:block th:if="${book != null}">增加册数时，"可借册数"会同步增加；减少册数不能少于已借出的册数。</th:block>
+              <th:block th:if="${book == null}">同一本书有几册就填几，例如 3。</th:block>
+            </div>
+          </div>
+          <div class="full">
+            <label class="field-label" for="summary">内容简介 / 备注</label>
+            <textarea class="textarea" id="summary" name="summary"
+                      placeholder="可以写这本书的简介、适合谁看、或者你的备注"
+                      th:text="${book != null and book.summary != null and book.summary != '' ? book.summary : (form != null and form['summary'] != null ? form['summary'] : '')}"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-actions">
+      <button class="btn btn-primary btn-lg" type="submit">保存</button>
+      <a class="btn btn-lg" th:href="@{/books}">取消</a>
+    </div>
+  </form>
+
+  <div class="card" style="margin-top:20px;" th:if="${book != null and book.id != null}">
+    <div class="card-head"><h2 class="card-title">封面图片（选填）</h2></div>
+    <div class="card-body">
+      <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+        <div>
+          <img th:if="${book.cover != null and book.cover != ''}"
+               th:src="@{/uploads/covers/{name}(name=${book.cover})}" alt="封面"
+               style="width:120px;border-radius:8px;box-shadow:0 4px 14px -6px rgba(15,23,42,.5);"/>
+          <div th:if="${book.cover == null or book.cover == ''}"
+               style="width:120px;height:160px;border:1px dashed #cbd5e1;border-radius:8px;
+                      display:flex;align-items:center;justify-content:center;color:#94a3b8;">
+            暂无封面
+          </div>
+        </div>
+        <div style="flex:1;min-width:240px;">
+          <form method="post" enctype="multipart/form-data"
+                th:action="@{/books/{id}/cover(id=${book.id})}">
+            <input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
+            <div class="filter-bar">
+              <input class="input grow" type="file" name="cover" accept=".jpg,.jpeg,.png,.gif,.webp" required="required"/>
+              <button class="btn btn-primary" type="submit">上传封面</button>
+            </div>
+            <div class="field-hint" style="margin-top:8px;">
+              支持 jpg / png / gif / webp，单张不超过 3MB。上传后读者端也会看到这张封面。
+            </div>
+          </form>
+          <form th:if="${book.cover != null and book.cover != ''}" method="post"
+                th:action="@{/books/{id}/cover/delete(id=${book.id})}"
+                style="margin-top:10px;"
+                data-confirm-title="删除封面"
+                data-confirm-ok="确认删除"
+                data-confirm-danger=""
+                th:data-confirm="|删除《${book.title}》的封面图片？|">
+            <input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
+            <button class="btn btn-sm btn-danger" type="submit">删除封面</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

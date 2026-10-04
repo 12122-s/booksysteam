@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: readerLayout(~{::#content}, 'my', '缴纳罚金', ${isReader})}">
+<body>
+<div id="content">
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">缴纳罚金</h2>
+      <div class="card-sub" th:text="|${reader.name} · 卡号 ${reader.cardNo}|"></div>
+    </div>
+    <div class="card-body">
+      <div class="summary-box" style="grid-template-columns:1fr;">
+        <div class="summary-item">
+          <div class="label">要缴的罚金</div>
+          <div class="value" style="font-size:24px;color:#dc2626;">
+            <span th:text="${money.of(fine)}"></span> 元
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="label">对应图书</div>
+          <div class="value" th:text="|《${r.bookTitle}》|"></div>
+        </div>
+        <div class="summary-item">
+          <div class="label">应还日期 / 归还日期</div>
+          <div class="value"
+               th:text="|${r.dueDate} / ${r.returnDate == null or r.returnDate == '' ? '还没还' : r.returnDate}|"></div>
+        </div>
+      </div>
+
+      <div class="notice" th:if="${conf['pay_note'] != null and conf['pay_note'] != ''}"
+           style="margin-top:14px;white-space:pre-line;"
+           th:text="${conf['pay_note']}"></div>
+
+      <th:block th:if="${(conf['pay_qr_wechat'] != null and conf['pay_qr_wechat'] != '')
+                        or (conf['pay_qr_alipay'] != null and conf['pay_qr_alipay'] != '')}">
+        <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:16px;">
+          <div style="text-align:center;" th:if="${conf['pay_qr_wechat'] != null and conf['pay_qr_wechat'] != ''}">
+            <div class="field-label">微信收款码</div>
+            <img th:src="@{/uploads/pay/{n}(n=${conf['pay_qr_wechat']})}"
+                 alt="微信收款码" style="width:200px;border:1px solid #e5e7eb;border-radius:10px;">
+            <div class="field-hint">长按图片可保存，再在微信里扫一扫</div>
+          </div>
+          <div style="text-align:center;" th:if="${conf['pay_qr_alipay'] != null and conf['pay_qr_alipay'] != ''}">
+            <div class="field-label">支付宝收款码</div>
+            <img th:src="@{/uploads/pay/{n}(n=${conf['pay_qr_alipay']})}"
+                 alt="支付宝收款码" style="width:200px;border:1px solid #e5e7eb;border-radius:10px;">
+            <div class="field-hint">长按图片可保存，再在支付宝里扫一扫</div>
+          </div>
+        </div>
+      </th:block>
+      <div class="notice warn" th:if="${(conf['pay_qr_wechat'] == null or conf['pay_qr_wechat'] == '')
+                                        and (conf['pay_qr_alipay'] == null or conf['pay_qr_alipay'] == '')}"
+           style="margin-top:14px;">
+        图书室还没上传收款码，请直接到图书室前台交现金。
+      </div>
+
+      <div class="divider"></div>
+      <p class="page-desc" style="margin-top:0;">
+        交完钱后，点下面的按钮告诉管理员"我已缴纳"，管理员核对到账后会确认（几秒到几分钟）。
+      </p>
+      <div class="page-actions">
+        <form method="post" th:action="@{/reader/fine/{id}/claim(id=${r.id})}"
+              th:attr="data-confirm-title='确认已缴纳',data-confirm-ok='我已缴纳'"
+              th:data-confirm="|确认你已经把 ${money.of(fine)} 元罚金交给图书室了吗？提交后请等管理员核对。|">
+          <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+          <button class="btn btn-primary btn-lg" type="submit">✅ 我已缴纳</button>
+        </form>
+        <a class="btn btn-lg" th:href="@{/reader/my}">返回我的借阅</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

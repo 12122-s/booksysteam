@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'dashboard', '工作台')}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">工作台</h1>
+      <p class="page-desc" th:text="|今天是 ${#temporals.format(today, 'yyyy年MM月dd日')}，这里是图书室当前的总体情况。|">今天是</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-primary" th:href="@{/borrow/new}">📕 办理借书</a>
+      <a class="btn" th:href="@{/books/new}">＋ 新增图书</a>
+      <a class="btn" th:href="@{/readers/new}">＋ 新增读者</a>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">📚 图书种类</div>
+      <div class="stat-value"><span th:text="${stats['bookKinds']}">0</span><small>种</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">📦 藏书总册数</div>
+      <div class="stat-value"><span th:text="${stats['bookCopies']}">0</span><small>册</small></div>
+    </div>
+    <div class="stat-card ok">
+      <div class="stat-label">✅ 现在可借</div>
+      <div class="stat-value"><span th:text="${stats['available']}">0</span><small>册</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">👥 读者人数</div>
+      <div class="stat-value"><span th:text="${stats['readers']}">0</span><small>人</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">🔄 当前借出</div>
+      <div class="stat-value"><span th:text="${stats['borrowed']}">0</span><small>册</small></div>
+    </div>
+    <div class="stat-card" th:classappend="${stats['overdue'] > 0} ? 'danger'">
+      <div class="stat-label">⏰ 逾期未还</div>
+      <div class="stat-value"><span th:text="${stats['overdue']}">0</span><small>册</small></div>
+    </div>
+  </div>
+
+  <div class="card" th:if="${!pendingResets.isEmpty()}">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title" th:text="|🔑 读者正在申请重置密码（${#lists.size(pendingResets)} 个）|">密码重置</h2>
+        <div class="card-sub">
+          请先打电话核对身份（报出手机号），再把验证码告诉他/她。验证码 30 分钟内有效。
+        </div>
+      </div>
+    </div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+          <tr>
+            <th>读者</th><th class="nowrap">手机号</th><th class="nowrap">验证码</th>
+            <th class="nowrap">申请时间</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="r : ${pendingResets}"
+              th:classappend="${r.expireAt <= resetNow} ? 'row-overdue'">
+            <td class="cell-main">
+              <span th:text="${r.readerName}">读者</span>
+              <div class="cell-sub" th:text="${r.cardNo}">卡号</div>
+            </td>
+            <td class="nowrap" th:text="${r.phone == null or r.phone == '' ? '—' : r.phone}">—</td>
+            <td class="nowrap">
+              <th:block th:if="${r.expireAt > resetNow}">
+                <span class="badge badge-info" style="font-size:15px;" th:text="${r.code}">000000</span>
+              </th:block>
+              <th:block th:if="${r.expireAt <= resetNow}">
+                <span class="badge badge-muted" th:text="${r.code}">000000</span>
+                <div class="cell-sub text-danger">已过期，请让读者重新获取</div>
+              </th:block>
+            </td>
+            <td class="nowrap text-muted" th:text="${r.createdAt}"></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" th:if="${!overdue.isEmpty()}">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title" th:text="|⏰ 需要催还的书（${#lists.size(overdue)} 册）|">催还</h2>
+        <div class="card-sub" th:text="|逾期合计应缴罚金约 ${money.of(stats['overdueFine'])} 元|">罚金</div>
+      </div>
+      <a class="btn btn-sm" th:href="@{/borrows(status='overdue')}">查看全部逾期</a>
+      <a class="btn btn-sm" th:href="@{/print/overdue}" target="_blank">🖨 打印催还单</a>
+    </div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+          <tr>
+            <th>读者</th><th>联系电话</th><th>书名</th>
+            <th class="nowrap">应还日期</th><th class="nowrap">已逾期</th>
+            <th class="nowrap">应缴罚金</th><th class="nowrap">操作</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr class="row-overdue" th:each="r : ${overdue}">
+            <td class="cell-main">
+              <span th:text="${r.readerName}">读者</span>
+              <div class="cell-sub" th:text="${r.cardNo}">卡号</div>
+            </td>
+            <td th:text="${r.phone == null or r.phone == '' ? '—' : r.phone}">—</td>
+            <td th:text="${r.bookTitle}">书名</td>
+            <td class="nowrap" th:text="${r.dueDate}"></td>
+            <td class="nowrap"><span class="badge badge-danger" th:text="|${r.overdueDays} 天|">0 天</span></td>
+            <td class="nowrap text-danger text-bold" th:text="|${money.of(r.fine)} 元|">0 元</td>
+            <td class="nowrap">
+              <form class="inline-form" method="post" th:action="@{/borrows/{id}/return(id=${r.id})}"
+                    th:attr="data-confirm-title='确认办理还书',data-confirm-ok='确认还书'"
+                    th:data-confirm="|《${r.bookTitle}》— ${r.readerName}
+已逾期 ${r.overdueDays} 天，应收罚金 ${money.of(r.fine)} 元。|">
+                <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+                <input type="hidden" name="next" value="/">
+                <button class="btn btn-sm btn-ok" type="submit">办理还书</button>
+              </form>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="notice" th:if="${overdue.isEmpty()}">✅ 目前没有逾期未还的书。</div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">📅 即将到期（最近 6 册）</h2>
+        <a class="btn btn-sm" th:href="@{/borrows(status='borrowing')}">全部在借</a>
+      </div>
+      <div class="card-body tight">
+        <div class="table-wrap" th:if="${!dueSoon.isEmpty()}">
+          <table class="table">
+            <thead><tr><th>读者</th><th>书名</th><th class="nowrap">应还日期</th><th class="nowrap">剩余</th></tr></thead>
+            <tbody>
+            <tr th:each="r : ${dueSoon}">
+              <td th:text="${r.readerName}"></td>
+              <td th:text="${r.bookTitle}"></td>
+              <td class="nowrap" th:text="${r.dueDate}"></td>
+              <td class="nowrap">
+                <span class="badge badge-warn"
+                      th:if="${r.daysLeft != null and r.daysLeft <= 3}"
+                      th:text="|${r.daysLeft} 天|">0 天</span>
+                <span class="text-muted" th:if="${r.daysLeft == null or r.daysLeft > 3}"
+                      th:text="|${r.daysLeft} 天|">0 天</span>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="empty" th:if="${dueSoon.isEmpty()}">
+          <span class="empty-ico">🙂</span>目前没有借出的书
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">🕘 最近动态</h2>
+        <a class="btn btn-sm" th:href="@{/borrows}">全部记录</a>
+      </div>
+      <div class="card-body tight">
+        <div class="table-wrap" th:if="${!recent.isEmpty()}">
+          <table class="table">
+            <thead><tr><th>读者</th><th>书名</th><th class="nowrap">借出</th><th class="nowrap">状态</th></tr></thead>
+            <tbody>
+            <tr th:each="r : ${recent}">
+              <td th:text="${r.readerName}"></td>
+              <td th:text="${r.bookTitle}"></td>
+              <td class="nowrap" th:text="${r.borrowDate}"></td>
+              <td class="nowrap">
+                <span class="badge badge-muted" th:if="${r.status == '已归还'}">已归还</span>
+                <span class="badge badge-danger" th:if="${r.status == '已逾期'}"
+                      th:text="|逾期 ${r.overdueDays} 天|">逾期</span>
+                <span class="badge badge-info" th:if="${r.status == '借出中'}">借出中</span>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="empty" th:if="${recent.isEmpty()}">
+          <span class="empty-ico">📭</span>还没有借阅记录
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script th:inline="javascript">
+    // 有读者新申请重置密码时，工作台自动刷新，管理员不用手动按 F5
+    (function () {
+      var lastCount = /*[[${#lists.size(pendingResets)}]]*/ 0;
+      setInterval(function () {
+        fetch("/api/pending-resets", {credentials: "same-origin"})
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            if (data && data.count !== lastCount) { location.reload(); }
+          })
+          .catch(function () {});
+      }, 15000);
+    })();
+  </script>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,49 @@
+### IntelliJ IDEA ###
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+.kotlin
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+### Java / Spring Boot ###
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### 本地工具（构建用的本地 Maven）###
+.tools/
+
+### 运行时数据（上传封面/收款码、自动备份）###
+uploads/
+backups/
+
+### IDEA 工程文件 ###
+.idea/
+*.iml
+
+### 运行日志 ###
+app.log

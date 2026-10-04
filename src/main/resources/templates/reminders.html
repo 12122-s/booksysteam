@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'settings', '提醒发送记录')}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">到期提醒发送记录</h1>
+      <p class="page-desc">系统自动发给读者的还书提醒、逾期催还，都记在这里（最近 200 条）。</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" th:href="@{/settings}">← 返回系统设置</a>
+    </div>
+  </div>
+
+  <div class="notice warn" th:if="${!mailConfigured}">
+    还没有配置发件邮箱，所以系统发不出提醒邮件。
+    请到「系统设置 → 验证码发件邮箱」填好邮箱和授权码。
+  </div>
+
+  <div class="card">
+    <div class="card-body tight">
+      <div class="table-wrap" th:if="${!rows.isEmpty()}">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="nowrap">发送时间</th><th>读者</th><th>书名</th>
+              <th class="nowrap">类型</th><th>收件邮箱</th>
+              <th class="nowrap">结果</th><th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${rows}" th:classappend="${r.ok == null or r.ok != 1} ? 'row-overdue'">
+              <td class="nowrap" th:text="${r.sentAt}"></td>
+              <td th:text="${r.readerName == null or r.readerName == '' ? '（已删除）' : r.readerName}">读者</td>
+              <td th:text="${r.bookTitle == null or r.bookTitle == '' ? '—' : r.bookTitle}">—</td>
+              <td class="nowrap">
+                <span class="badge badge-info" th:if="${r.kind == 'due_soon'}">快到期</span>
+                <span class="badge badge-warn" th:if="${r.kind != 'due_soon'}">已逾期</span>
+              </td>
+              <td th:text="${r.sentTo == null or r.sentTo == '' ? '—' : r.sentTo}">—</td>
+              <td class="nowrap">
+                <span class="badge badge-ok" th:if="${r.ok != null and r.ok == 1}">已发送</span>
+                <span class="badge badge-danger" th:if="${r.ok == null or r.ok != 1}">失败</span>
+              </td>
+              <td th:text="${r.message == null ? '' : r.message}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${rows.isEmpty()}">
+        <span class="empty-ico">📭</span>
+        还没有发送过提醒。系统会在读者"快到期"和"已逾期"时自动发邮件。
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

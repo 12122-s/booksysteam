@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: readerLayout(~{::#content}, 'login', '重置密码', false)}">
+<body>
+<div id="content">
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">设置新密码</h2>
+      <div class="card-sub" th:text="|${reader.name} · 卡号 ${reader.cardNo}|"></div>
+    </div>
+    <div class="card-body">
+      <div class="notice">
+        请输入管理员告诉你（或发到你邮箱）的 6 位验证码，然后设置新密码。
+        你的手机号是 <b th:text="${phone}"></b>，管理员会核对这个号码。
+      </div>
+      <form method="post" th:action="@{/reader/reset}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+        <label class="field-label" for="code">验证码（6 位数字）</label>
+        <input class="input input-lg" id="code" name="code" inputmode="numeric" autocomplete="one-time-code"
+               maxlength="6" required="required" autofocus="autofocus" placeholder="请输入 6 位验证码">
+
+        <label class="field-label" for="password" style="margin-top:14px;">新密码（至少 6 位）</label>
+        <input class="input input-lg" id="password" name="password" type="password" required="required">
+
+        <label class="field-label" for="confirm_password" style="margin-top:14px;">再输一次新密码</label>
+        <input class="input input-lg" id="confirm_password" name="confirm_password"
+               type="password" required="required">
+
+        <div class="page-actions" style="margin-top:18px;">
+          <button class="btn btn-primary btn-lg btn-block" type="submit">保存新密码</button>
+        </div>
+      </form>
+      <div class="field-hint" style="margin-top:10px;">
+        验证码 10 分钟内有效，最多输错 5 次。过期或输错太多，回到上一步重新获取即可。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <a th:href="@{/reader/forgot}">重新获取验证码</a>
+      ·
+      <a th:href="@{/login}">返回登录</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'books', '批量导入图书')}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">批量导入图书</h1>
+      <p class="page-desc">一次把几十本、几百本书导进来，不用一本本录。</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" th:href="@{/books}">← 返回图书列表</a>
+      <a class="btn btn-primary" th:href="@{/books/import/template.csv}">⬇ 下载导入模板</a>
+    </div>
+  </div>
+
+  <div class="card" th:if="${result != null}">
+    <div class="card-head"><h2 class="card-title">导入结果</h2></div>
+    <div class="card-body">
+      <div class="stat-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+        <div class="stat-card ok">
+          <div class="stat-label">成功导入</div>
+          <div class="stat-value"><span th:text="${result.added}">0</span><small>本</small></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">跳过（重复）</div>
+          <div class="stat-value"><span th:text="${result.skipped}">0</span><small>本</small></div>
+        </div>
+        <div class="stat-card" th:classappend="${result.errorTotal > 0} ? 'danger'">
+          <div class="stat-label">有问题没导入</div>
+          <div class="stat-value"><span th:text="${result.errorTotal}">0</span><small>行</small></div>
+        </div>
+      </div>
+      <div th:if="${result.errors != null and !result.errors.isEmpty()}">
+        <div class="field-label">没导入的行（最多显示 30 条）：</div>
+        <div class="path-box" style="line-height:1.9;">
+          <th:block th:each="e : ${result.errors}"><span th:text="${e}"></span><br/></th:block>
+        </div>
+      </div>
+      <div class="page-actions" style="margin-top:16px;">
+        <a class="btn btn-primary" th:href="@{/books}">去看看图书列表</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">怎么导</h2></div>
+    <div class="card-body">
+      <ol style="line-height:2;margin:0;padding-left:22px;">
+        <li>点右上角 <b>「⬇ 下载导入模板」</b>，得到一个表格文件</li>
+        <li>用 Excel 打开它，把书一本本填进去（<b>只有「书名」必须填</b>，其他留空也行）</li>
+        <li>保存关掉，然后在下面选这个文件、点「开始导入」</li>
+      </ol>
+      <div class="notice" style="margin-top:14px;">
+        支持两种文件：<b>.xlsx</b>（Excel 直接保存的格式）和 <b>.csv</b>。
+        如果你的是老版 <b>.xls</b>，请在 Excel 里「另存为」→ 选 <b>Excel 工作簿(.xlsx)</b>。
+      </div>
+      <div class="divider"></div>
+      <div class="field-label">表头这样写（每列叫什么都可以，认得出就行）：</div>
+      <div class="path-box" th:text="${#strings.listJoin(headers, '　|　')}"></div>
+      <div class="field-hint" style="margin-top:8px;">
+        「书名」这一列不能少。总册数不填默认 1 册；出版年份、单价填数字；填错的行会被跳过并列出来，不会影响其他行。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">上传文件</h2></div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" th:action="@{/books/import}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
+        <div class="filter-bar">
+          <input class="input grow" type="file" name="file" accept=".xlsx,.csv,.txt" required="required"/>
+          <button class="btn btn-primary" type="submit">开始导入</button>
+        </div>
+        <label class="text-muted" style="display:flex;align-items:center;gap:7px;margin-top:12px;">
+          <input type="checkbox" name="skip_duplicate" value="1" checked="checked"/>
+          跳过重复的书（书名和书号都一样时不再导入）
+        </label>
+        <div class="field-hint" style="margin-top:6px;">
+          不勾选的话，同样的书会再导入一份。
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

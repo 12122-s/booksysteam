@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'settings', '系统设置')}">
+<body>
+<div id="content">
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">系统设置</h1>
+    <p class="page-desc">改完点保存立即生效。这里的规则会用在借书、还书、逾期计算上。</p>
+  </div>
+</div>
+
+<div class="notice warn" th:if="${defaultPassword}">
+  ⚠️ 你还在使用初始密码 <b>123456</b>。请用下面的「修改密码」改成只有你知道的密码。
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">借阅规则</h2></div>
+    <div class="card-body">
+      <form method="post" th:action="@{/settings}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+        <div class="grid-form">
+          <div class="full">
+            <label class="field-label" for="library_name">图书室名称</label>
+            <input class="input" id="library_name" name="library_name" th:value="${conf['library_name']}" required="required" />
+            <div class="field-hint">显示在系统左上角。</div>
+          </div>
+          <div class="full">
+            <label class="field-label" for="admin_account">管理员账号</label>
+            <input class="input" id="admin_account" name="admin_account"
+                   th:value="${conf['admin_account']}" required="required" />
+            <div class="field-hint">
+              登录时填这个账号 + 管理密码，就进管理端（读者则填卡号或手机号）。改成别人猜不到的名字更安全。
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="borrow_days">默认借期（天）</label>
+            <input class="input" id="borrow_days" name="borrow_days" inputmode="numeric"
+                   th:value="${conf['borrow_days']}" required="required" />
+            <div class="field-hint">借书时自动算应还日期。</div>
+          </div>
+          <div>
+            <label class="field-label" for="max_books_per_reader">每人最多可借（册）</label>
+            <input class="input" id="max_books_per_reader" name="max_books_per_reader" inputmode="numeric"
+                   th:value="${conf['max_books_per_reader']}" required="required" />
+            <div class="field-hint">超过这个数就不能再借。</div>
+          </div>
+          <div>
+            <label class="field-label" for="max_renew_times">续借次数上限（次）</label>
+            <input class="input" id="max_renew_times" name="max_renew_times" inputmode="numeric"
+                   th:value="${conf['max_renew_times']}" required="required" />
+            <div class="field-hint">填 0 表示不允许续借。</div>
+          </div>
+          <div>
+            <label class="field-label" for="fine_per_day">逾期罚金（元 / 册 / 天）</label>
+            <input class="input" id="fine_per_day" name="fine_per_day" inputmode="decimal"
+                   th:value="${conf['fine_per_day']}" required="required" />
+            <div class="field-hint">填 0 表示不收罚金。</div>
+          </div>
+          <div>
+            <label class="field-label" for="reminder_days_before">到期前提前几天提醒（天）</label>
+            <input class="input" id="reminder_days_before" name="reminder_days_before"
+                   inputmode="numeric" th:value="${conf['reminder_days_before']}" required="required" />
+            <div class="field-hint">读者留了邮箱的话，系统会在这一天发还书提醒。</div>
+          </div>
+          <div class="full">
+            <label class="text-muted" style="display:flex;align-items:flex-start;gap:8px;">
+              <input type="checkbox" name="reminder_enabled" value="1" style="margin-top:4px;"
+                     th:checked="${conf['reminder_enabled'] == '1'}" />
+              <span>
+                自动发到期 / 逾期提醒邮件
+                <div class="field-hint" style="margin-top:2px;">
+                  系统每 30 分钟检查一次：快到期的发一次，逾期后第 1、3、7、14、21、30 天各发一次。
+                  要能发出去，得先配好下面的发件邮箱，且读者留了邮箱。
+                </div>
+              </span>
+            </label>
+          </div>
+          <div class="full">
+            <label class="text-muted" style="display:flex;align-items:flex-start;gap:8px;">
+              <input type="checkbox" name="allow_multi_login" value="1" style="margin-top:4px;"
+                     th:checked="${conf['allow_multi_login'] == '1'}" />
+              <span>
+                允许同一个浏览器同时登录管理端和读者端（自己测试时方便）
+                <div class="field-hint" style="margin-top:2px;">
+                  <b>默认不勾（安全）</b>：谁后登录，就把前一个身份顶掉——别人用这台电脑登录读者账号后，
+                  打不开管理端，也不能把你挤掉。<br />
+                  勾上以后：两个身份互不影响（适合你自己一边开管理端、一边开读者端看效果），
+                  但<b>公用电脑上不要勾</b>。
+                </div>
+              </span>
+            </label>
+          </div>
+          <div class="full">
+            <label class="field-label" for="announcement">公告（显示在读者端顶部和「公告与规则」页）</label>
+            <textarea class="textarea" id="announcement" name="announcement"
+                      placeholder="例如：国庆期间闭馆 10 月 1 日 - 10 月 3 日，请提前还书。"
+                      th:text="${conf['announcement']}"></textarea>
+            <div class="field-hint">留空就不显示公告。可以写多行，换行会保留。</div>
+          </div>
+          <div>
+            <label class="field-label" for="auto_backup_keep_days">自动备份保留天数</label>
+            <input class="input" id="auto_backup_keep_days" name="auto_backup_keep_days"
+                   inputmode="numeric" th:value="${conf['auto_backup_keep_days']}" required="required" />
+            <div class="field-hint">系统每天自动备份一次，超过这个天数的旧备份会被删掉。</div>
+          </div>
+          <div>
+            <label class="field-label">每日自动备份</label>
+            <label class="text-muted" style="display:flex;align-items:flex-start;gap:8px;">
+              <input type="checkbox" name="auto_backup_enabled" value="1" style="margin-top:4px;"
+                     th:checked="${conf['auto_backup_enabled'] == '1'}" />
+              <span>
+                开启（备份存在程序目录的 backups 文件夹）
+                <div class="field-hint" style="margin-top:2px;">建议开着，电脑坏了能恢复。</div>
+              </span>
+            </label>
+          </div>
+          <div class="full">
+            <label class="field-label">读者能不能自己在网上借书</label>
+            <label class="text-muted" style="display:flex;align-items:flex-start;gap:8px;">
+              <input type="checkbox" name="allow_self_borrow" value="1" style="margin-top:4px;"
+                     th:checked="${conf['allow_self_borrow'] == '1'}" />
+              <span>
+                允许读者登录读者中心后自己借书
+                <div class="field-hint" style="margin-top:2px;">
+                  取消勾选后，读者只能查书、查自己的借阅记录，借书还是由你在后台办理。
+                </div>
+              </span>
+            </label>
+            <label class="text-muted" style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;">
+              <input type="checkbox" name="borrow_need_approval" value="1" style="margin-top:4px;"
+                     th:checked="${conf['borrow_need_approval'] == '1'}" />
+              <span>
+                读者在线借书先提交申请，由我办理借出（推荐）
+                <div class="field-hint" style="margin-top:2px;">
+                  勾上：读者点的是「申请借阅」，你这边「借阅申请」会出现待办，读者来取书时点「办理借出」确认；
+                  申请期间不占册数。<br />
+                  不勾：读者点一下就直接借走。
+                </div>
+              </span>
+            </label>
+          </div>
+          <div class="full">
+            <label class="field-label">邮件通知（读者留了邮箱时才有效）</label>
+            <label class="text-muted" style="display:flex;align-items:flex-start;gap:8px;">
+              <input type="checkbox" name="mail_notify_ready" value="1" style="margin-top:4px;"
+                     th:checked="${conf['mail_notify_ready'] == '1'}" />
+              <span>
+                读者预约的书到馆时，自动发邮件通知他
+                <div class="field-hint" style="margin-top:2px;">
+                  不勾选：不发邮件，只在读者端「我的借阅」里显示"书已到馆，请来取"，
+                  由你电话或当面通知。<br />
+                  （上面的「到期/逾期提醒邮件」是另一个独立开关；"忘记密码"的验证码邮件不受这两个开关影响。）
+                </div>
+              </span>
+            </label>
+            <label class="text-muted" style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+              <span style="min-width:200px;">申请超过几天没办理就自动取消：</span>
+              <input class="input" style="max-width:110px;" name="request_expire_days"
+                     inputmode="numeric" th:value="${conf['request_expire_days']}" />
+              <span>天（填 0 表示不自动取消）</span>
+            </label>
+          </div>
+          <div class="full">
+            <label class="field-label">读者能不能自己在网上办卡</label>
+            <label class="text-muted" style="display:flex;align-items:flex-start;gap:8px;">
+              <input type="checkbox" name="reader_self_register" value="1" style="margin-top:4px;"
+                     th:checked="${conf['reader_self_register'] == '1'}" />
+              <span>
+                允许读者自己填资料注册办卡（卡号由系统自动生成）
+                <div class="field-hint" style="margin-top:2px;">
+                  取消勾选后，读者必须先在「读者管理」里由你登记卡号，然后才能注册账号。
+                </div>
+              </span>
+            </label>
+            <label class="text-muted" style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;">
+              <input type="checkbox" name="reader_register_need_approval" value="1" style="margin-top:4px;"
+                     th:checked="${conf['reader_register_need_approval'] == '1'}" />
+              <span>
+                自助办卡的读者，要我确认后才能借书
+                <div class="field-hint" style="margin-top:2px;">
+                  勾上以后：读者注册完状态是「待审核」，可以在「读者管理」里点「通过审核」放行；
+                  不勾：注册完立刻就能借书。
+                </div>
+              </span>
+            </label>
+          </div>
+        </div>
+        <div class="page-actions" style="margin-top:16px;">
+          <button class="btn btn-primary" type="submit">保存设置</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">修改管理密码</h2></div>
+      <div class="card-body">
+        <form method="post" th:action="@{/settings/password}">
+          <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+          <div class="grid-form">
+            <div class="full">
+              <label class="field-label" for="current_password">当前密码</label>
+              <input class="input" id="current_password" name="current_password" type="password" required="required" />
+            </div>
+            <div>
+              <label class="field-label" for="new_password">新密码（至少 6 位）</label>
+              <input class="input" id="new_password" name="new_password" type="password" required="required" />
+            </div>
+            <div>
+              <label class="field-label" for="confirm_password">再输一次新密码</label>
+              <input class="input" id="confirm_password" name="confirm_password" type="password" required="required" />
+            </div>
+          </div>
+          <div class="page-actions" style="margin-top:16px;">
+            <button class="btn btn-primary" type="submit">修改密码</button>
+          </div>
+          <div class="field-hint" style="margin-top:8px;">
+            密码只保存在这台电脑上，并且是加密保存的，谁也看不到明文。
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">验证码发件邮箱（可不填）</h2></div>
+      <div class="card-body">
+        <p class="page-desc" style="margin-top:0;">
+          读者"忘记密码"时，系统会生成 6 位验证码。<br />
+          <b>填了邮箱</b>：验证码自动发到读者留的邮箱，读者自己就能改密码；<br />
+          <b>不填</b>：验证码会显示在「工作台」上，读者打电话找你，你核对身份后告诉他。
+        </p>
+        <form method="post" th:action="@{/settings/email}">
+          <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+          <div class="grid-form">
+            <div>
+              <label class="field-label" for="smtp_host">发件服务器</label>
+              <input class="input" id="smtp_host" name="smtp_host" th:value="${conf['smtp_host']}"
+                     placeholder="QQ 邮箱：smtp.qq.com" />
+            </div>
+            <div>
+              <label class="field-label" for="smtp_port">端口</label>
+              <input class="input" id="smtp_port" name="smtp_port" inputmode="numeric"
+                     th:value="${conf['smtp_port']}" placeholder="465" />
+            </div>
+            <div>
+              <label class="field-label" for="smtp_user">发件邮箱账号</label>
+              <input class="input" id="smtp_user" name="smtp_user" th:value="${conf['smtp_user']}"
+                     placeholder="发件邮箱地址" />
+            </div>
+            <div>
+              <label class="field-label" for="smtp_pass">邮箱授权码</label>
+              <input class="input" id="smtp_pass" name="smtp_pass" type="password"
+                     placeholder="不是登录密码，是邮箱设置里的授权码" />
+            </div>
+          </div>
+          <div class="page-actions" style="margin-top:14px;">
+            <button class="btn btn-primary" type="submit">保存邮箱设置</button>
+          </div>
+          <div class="field-hint" style="margin-top:8px;">
+            在邮箱网页版的「设置 → 账号 → POP3/SMTP 服务」里开启服务并生成授权码（16 位字母）。
+          </div>
+        </form>
+        <div class="divider"></div>
+        <form class="filter-bar" method="post" th:action="@{/settings/test-email}">
+          <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+          <input class="input grow" type="email" name="to" placeholder="收件邮箱（留空则发给自己）" />
+          <button class="btn" type="submit">发送测试邮件</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">每日自动备份</h2>
+        <a class="btn btn-sm" th:href="@{/logs}">查看操作日志</a>
+      </div>
+      <div class="card-body">
+        <p class="page-desc" style="margin-top:0;">
+          系统每天自动备份一次，存放在程序目录的 <b>backups</b> 文件夹里；超过"备份保留天数"的旧备份会自动清理。
+          下面是最近的备份，可以单独下载或删除。
+        </p>
+        <form method="post" th:action="@{/settings/backup-now}">
+          <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+          <button class="btn btn-primary" type="submit">💾 立即备份一次</button>
+        </form>
+        <div class="table-wrap" style="margin-top:14px;" th:if="${!backups.isEmpty()}">
+          <table class="table">
+            <thead>
+              <tr><th>备份文件</th><th class="nowrap">大小</th>
+                  <th class="nowrap">备份时间</th><th class="nowrap">操作</th></tr>
+            </thead>
+            <tbody>
+              <tr th:each="b : ${backups}">
+                <td class="cell-main" th:text="${b.name}">backup.sql</td>
+                <td class="nowrap" th:text="|${b.sizeKb} KB|">0 KB</td>
+                <td class="nowrap" th:text="${b.time}"></td>
+                <td class="nowrap">
+                  <div class="actions">
+                    <a class="btn btn-sm" th:href="@{/backups/{name}(name=${b.name})}">下载</a>
+                    <form class="inline-form" method="post"
+                          th:action="@{/backups/{name}/delete(name=${b.name})}"
+                          th:attr="data-confirm-title='删除备份文件',data-confirm-ok='确认删除'"
+                          data-confirm-danger="1"
+                          th:data-confirm="|删除备份文件 ${b.name}？删除后无法恢复。|">
+                      <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                      <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="field-hint" style="margin-top:10px;" th:if="${backups.isEmpty()}">
+          还没有备份文件，点上面的按钮可以立刻备份一份。
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">到期提醒</h2></div>
+      <div class="card-body">
+        <p class="page-desc" style="margin-top:0;">
+          系统运行期间会每 30 分钟自动检查一次，给"快到期"和"已逾期"的读者发提醒邮件。
+          前提是要配好上面的发件邮箱，并且读者留了邮箱。
+        </p>
+        <div class="page-actions">
+          <form method="post" th:action="@{/settings/send-reminders}"
+                th:attr="data-confirm-title='立即发送提醒',data-confirm-ok='立即发送'"
+                data-confirm="马上检查一遍，给快到期和已逾期的读者发提醒邮件。确定吗？">
+            <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+            <button class="btn btn-primary" type="submit">📧 立即发送提醒</button>
+          </form>
+          <a class="btn" th:href="@{/reminders}">查看发送记录</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">数据恢复（从备份文件还原）</h2></div>
+      <div class="card-body">
+        <div class="notice warn">
+          ⚠️ 恢复会<b>覆盖现在的全部数据</b>（图书、读者、借阅记录、设置）。
+          系统会在恢复前<b>自动把当前数据另存一份</b>到 backups 文件夹，万一恢复错了还能退回来。
+        </div>
+        <form method="post" th:action="@{/settings/restore}" enctype="multipart/form-data"
+              th:attr="data-confirm-title='确认恢复数据',data-confirm-ok='确认覆盖并恢复'"
+              data-confirm-danger="1"
+              data-confirm="现在的数据会被备份文件里的内容覆盖。系统会先自动备份当前数据。确定继续吗？">
+          <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+          <div class="filter-bar">
+            <input class="input grow" type="file" name="file" accept=".sql,.txt" required="required" />
+            <button class="btn btn-danger" type="submit">从备份恢复</button>
+          </div>
+          <div class="field-hint" style="margin-top:8px;">
+            选择用「⬇ 完整数据备份(.sql)」导出的那个文件。
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">数据导出与备份</h2></div>
+      <div class="card-body">
+        <p class="page-desc" style="margin-top:0;">
+          数据保存在本机 MySQL 数据库里。
+          导出成 CSV 可以用 Excel 打开查看；导出成 .sql 是完整备份，将来换电脑或上线时用它恢复数据。
+        </p>
+        <div class="page-actions">
+          <a class="btn" th:href="@{/export/books.csv}">⬇ 图书清单</a>
+          <a class="btn" th:href="@{/export/readers.csv}">⬇ 读者清单</a>
+          <a class="btn" th:href="@{/export/borrows.csv}">⬇ 借阅记录</a>
+          <a class="btn btn-primary" th:href="@{/export/backup.sql}">⬇ 完整数据备份(.sql)</a>
+        </div>
+        <div class="divider"></div>
+        <div class="field-hint">
+          图书 <span th:text="${counts['books']}">0</span> 种 ·
+          读者 <span th:text="${counts['readers']}">0</span> 位 ·
+          借阅记录 <span th:text="${counts['records']}">0</span> 条
+          （其中 <span th:text="${counts['borrowing']}">0</span> 条未归还）
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">关于"放到网上公开使用"</h2></div>
+  <div class="card-body">
+    <p style="margin-top:0;">
+      这套系统现在是**本地版**：数据和程序都在你这台电脑上，不需要联网。
+      按你的要求，我们已经为"上线版"做好了准备（数据库结构、登录这层都已经就位）。
+      上线的完整规划写在项目目录里的 <b>需求文档.md</b> 第十一章，包括要买什么、花多少钱、备案要多久。
+    </p>
+    <div class="field-hint">
+      简单说：上线需要「域名 + 云服务器」约 150~400 元/年；服务器若放在中国大陆，域名还需要 ICP 备案（1~3 周）。
+      什么时候要做，告诉我，我带你一步步来。
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="card-title">数据维护</h2></div>
+  <div class="card-body">
+    <div class="page-actions">
+      <form method="post" th:action="@{/settings/load-demo}"
+            th:attr="data-confirm-title='载入示例数据',data-confirm-ok='载入示例数据'"
+            data-confirm="会在现有内容之外，再加 15 本示例图书、5 位示例读者和一些借阅记录。">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+        <button class="btn" type="submit">载入示例数据（试用）</button>
+      </form>
+      <form method="post" th:action="@{/settings/clear-data}"
+            th:attr="data-confirm-title='确认清空所有数据',data-confirm-ok='确认清空'"
+            data-confirm-danger="1"
+            data-confirm="图书、读者和借阅记录都会清空，此操作无法撤销。建议先到上面导出一次完整备份。">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+        <button class="btn btn-danger" type="submit">清空所有数据</button>
+      </form>
+    </div>
+    <div class="field-hint" style="margin-top:10px;">
+      正式使用前，建议先把示例数据清空，再从零录入你自己的书。
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

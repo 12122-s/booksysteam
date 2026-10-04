@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'requests', '借阅申请')}">
+<body>
+<div id="content">
+<div class="page-head">
+  <div>
+    <h1 class="page-title">借阅申请（待办理）</h1>
+    <p class="page-desc">
+      读者在网上提交的借阅申请。读者来取书时，点这行的「办理借出」——
+      读者和图书已经选好，你核对一下确认就行；确认后申请自动标记为已办理。
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" th:href="@{/borrows}">← 借阅记录</a>
+  </div>
+</div>
+
+<div class="tabs">
+  <a class="tab" th:classappend="${status == ''} ? 'active'" th:href="@{/requests}">
+    全部 <span class="count" th:text="${countAll}">0</span></a>
+  <a class="tab" th:classappend="${status == '待办理'} ? 'active'"
+     th:href="@{/requests(status='待办理')}">
+    申请 / 预约中 <span class="count" th:text="${countPending}">0</span></a>
+  <a class="tab" th:classappend="${status == '可借'} ? 'active'"
+     th:href="@{/requests(status='可借')}">
+    书已到馆 <span class="count" th:text="${countReady}">0</span></a>
+  <a class="tab" th:classappend="${status == '已办理'} ? 'active'"
+     th:href="@{/requests(status='已办理')}">
+    已办理 <span class="count" th:text="${countDone}">0</span></a>
+  <a class="tab" th:classappend="${status == '已取消'} ? 'active'"
+     th:href="@{/requests(status='已取消')}">
+    已取消 <span class="count" th:text="${countCancelled}">0</span></a>
+</div>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap" th:if="${!rows.isEmpty()}">
+      <table class="table">
+        <thead>
+          <tr><th>读者</th><th>想借的书</th><th class="nowrap">申请时间</th>
+              <th class="nowrap">现在可借</th><th class="nowrap">状态</th>
+              <th class="nowrap">操作</th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="r : ${rows}" th:classappend="${r.status == '待办理'} ? 'row-overdue'">
+            <td>
+              <div class="cell-main" th:text="${r.readerName}">读者</div>
+              <div class="cell-sub"
+                   th:text="${r.cardNo + (r.phone != null and r.phone != '' ? ' · ' + r.phone : '')}">卡号</div>
+            </td>
+            <td>
+              <div class="cell-main" th:text="${r.bookTitle}">书名</div>
+              <div class="cell-sub"
+                   th:text="${(r.bookAuthor == null ? '' : r.bookAuthor) + (r.location != null and r.location != '' ? ' · ' + r.location : '')}"></div>
+            </td>
+            <td class="nowrap" th:text="${r.createdAt}"></td>
+            <td class="nowrap">
+              <span class="badge badge-ok" th:if="${r.availableCopies != null and r.availableCopies > 0}"
+                    th:text="|${r.availableCopies} 册|">0 册</span>
+              <span class="badge badge-danger"
+                    th:if="${r.availableCopies == null or !(r.availableCopies > 0)}">已借完</span>
+            </td>
+            <td class="nowrap">
+              <span class="badge badge-ok" th:if="${r.status == '可借'}">书已到馆</span>
+              <span class="badge badge-warn" th:if="${r.status == '待办理'}"
+                    th:text="${!(r.availableCopies != null and r.availableCopies > 0) ? '预约中（等书）' : '待办理'}">待办理</span>
+              <span class="badge badge-ok" th:if="${r.status == '已办理'}">已办理</span>
+              <span class="badge badge-muted"
+                    th:if="${r.status != '可借' and r.status != '待办理' and r.status != '已办理'}"
+                    th:text="${r.status}">状态</span>
+            </td>
+            <td class="nowrap">
+              <th:block th:if="${r.status == '待办理' or r.status == '可借'}">
+                <div class="actions">
+                  <a class="btn btn-sm btn-primary"
+                     th:href="@{/borrow/new(rq=${r.cardNo}, pick_reader=${r.readerId}, bq=${r.bookTitle}, pick_book=${r.bookId})}">办理借出</a>
+                  <form class="inline-form" method="post"
+                        th:action="@{/requests/{id}/cancel(id=${r.id})}"
+                        data-confirm-title="取消这条申请"
+                        data-confirm-ok="确认取消"
+                        data-confirm-danger=""
+                        th:data-confirm="|取消 ${r.readerName} 对《${r.bookTitle}》的借阅申请？|">
+                    <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                    <input type="hidden" name="back_status" th:value="${status}" />
+                    <button class="btn btn-sm btn-danger" type="submit">取消</button>
+                  </form>
+                </div>
+              </th:block>
+              <span class="text-muted"
+                    th:if="${r.status != '待办理' and r.status != '可借'}">—</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${rows.isEmpty()}">
+      <span class="empty-ico">📝</span>
+      还没有借阅申请。读者在「找书 / 借书」里点「申请借阅」就会出现在这里。
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

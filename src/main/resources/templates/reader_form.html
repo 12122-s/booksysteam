@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'readers', ${reader != null ? '编辑读者' : '新增读者'})}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title" th:text="${reader != null ? '编辑读者' : '新增读者'}">新增读者</h1>
+      <p class="page-desc">卡号和姓名是必填项。卡号是读者在系统里的唯一编号，不能重复。</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" th:href="@{/readers}">← 返回读者列表</a>
+    </div>
+  </div>
+
+  <form method="post" th:action="${reader != null} ? @{/readers/{id}/edit(id=${reader.id})} : @{/readers/new}">
+    <input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">读者信息</h2></div>
+      <div class="card-body">
+        <div class="grid-form">
+          <div>
+            <label class="field-label" for="card_no">借书卡号 <span class="text-danger">*</span></label>
+            <input class="input" id="card_no" name="card_no" required="required"
+                   th:value="${reader != null ? reader.cardNo : (form != null and form['card_no'] != null ? form['card_no'] : '')}"
+                   placeholder="请输入借书卡号"/>
+            <div class="field-hint">建议用学号 / 工号，或自编编号。</div>
+          </div>
+          <div>
+            <label class="field-label" for="name">姓名 <span class="text-danger">*</span></label>
+            <input class="input" id="name" name="name" required="required"
+                   th:value="${reader != null ? reader.name : (form != null and form['name'] != null ? form['name'] : '')}"
+                   placeholder="请输入姓名"/>
+          </div>
+          <div>
+            <label class="field-label" for="gender">性别</label>
+            <select class="select" id="gender" name="gender">
+              <option value="">不填</option>
+              <option value="男"
+                      th:selected="${reader != null ? reader.gender == '男' : (form != null and form['gender'] != null ? form['gender'] == '男' : false)}">男</option>
+              <option value="女"
+                      th:selected="${reader != null ? reader.gender == '女' : (form != null and form['gender'] != null ? form['gender'] == '女' : false)}">女</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="reader_type">读者类型</label>
+            <input class="input" id="reader_type" name="reader_type" list="type-list"
+                   th:value="${reader != null ? reader.readerType : (form != null and form['reader_type'] != null ? form['reader_type'] : '')}"
+                   placeholder="例如：学生"/>
+            <datalist id="type-list">
+              <option value="学生"></option><option value="教师"></option>
+              <option value="职工"></option><option value="其他"></option>
+            </datalist>
+          </div>
+          <div>
+            <label class="field-label" for="department">单位 / 班级</label>
+            <input class="input" id="department" name="department"
+                   th:value="${reader != null ? reader.department : (form != null and form['department'] != null ? form['department'] : '')}"
+                   placeholder="请输入单位或班级"/>
+          </div>
+          <div>
+            <label class="field-label" for="phone">联系电话</label>
+            <input class="input" id="phone" name="phone" inputmode="tel"
+                   th:value="${reader != null ? reader.phone : (form != null and form['phone'] != null ? form['phone'] : '')}"
+                   placeholder="催还书时用得到"/>
+          </div>
+          <div>
+            <label class="field-label" for="email">电子邮箱</label>
+            <input class="input" id="email" name="email"
+                   th:value="${reader != null and reader.email != null and reader.email != '' ? reader.email : (form != null and form['email'] != null ? form['email'] : '')}"
+                   placeholder="可以先不填"/>
+            <div class="field-hint">以后系统上线、读者能自己登录查书时，用来给他们发到期提醒。</div>
+          </div>
+          <div>
+            <label class="field-label" for="status">状态</label>
+            <select class="select" id="status" name="status">
+              <option value="正常"
+                      th:selected="${reader != null ? reader.status == '正常' : (form != null and form['status'] != null and form['status'] != '' ? form['status'] == '正常' : true)}">正常（可以借书）</option>
+              <option value="待审核"
+                      th:selected="${reader != null ? reader.status == '待审核' : (form != null and form['status'] != null ? form['status'] == '待审核' : false)}">待审核（还不能借书）</option>
+              <option value="停用"
+                      th:selected="${reader != null ? reader.status == '停用' : (form != null and form['status'] != null ? form['status'] == '停用' : false)}">停用（不能再借书）</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-actions">
+      <button class="btn btn-primary btn-lg" type="submit">保存</button>
+      <a class="btn btn-lg" th:href="@{/readers}">取消</a>
+    </div>
+  </form>
+
+</div>
+</body>
+</html>

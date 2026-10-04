@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: printLayout(~{::#content}, '借书单')}">
+<body>
+<div id="content">
+<div class="print-head">
+  <div class="print-title" th:text="|${conf['library_name']} · 借书凭单|">我的图书室 · 借书凭单</div>
+  <div class="print-sub" th:text="|打印时间：${printedAt}|">打印时间：</div>
+</div>
+
+<table class="print-table">
+  <tr><th>读者</th><td th:text="${r.readerName}">读者</td><th>借书卡号</th><td th:text="${r.cardNo}">卡号</td></tr>
+  <tr><th>联系电话</th><td th:text="${r.phone == null or r.phone == '' ? '—' : r.phone}">—</td>
+      <th>单位/班级</th><td th:text="${r.department == null or r.department == '' ? '—' : r.department}">—</td></tr>
+  <tr><th>书名</th><td colspan="3" th:text="${r.bookTitle}">书名</td></tr>
+  <tr><th>作者</th><td th:text="${r.bookAuthor == null or r.bookAuthor == '' ? '—' : r.bookAuthor}">—</td>
+      <th>馆藏位置</th><td th:text="${r.bookLocation == null or r.bookLocation == '' ? '—' : r.bookLocation}">—</td></tr>
+  <tr><th>借出日期</th><td th:text="${r.borrowDate}">日期</td><th>应还日期</th><td><b th:text="${r.dueDate}">日期</b></td></tr>
+</table>
+
+<div class="print-note"
+     th:text="|借期 ${conf['borrow_days']} 天，可续借 ${conf['max_renew_times']} 次；逾期每天 ${conf['fine_per_day']} 元 / 册。请按时归还，谢谢配合！|">
+  借期 30 天，可续借 1 次；逾期每天 0.5 元 / 册。请按时归还，谢谢配合！
+</div>
+<div class="print-sign">
+  <span>读者签字：________________</span>
+  <span>经办人：________________</span>
+</div>
+</div>
+</body>
+</html>

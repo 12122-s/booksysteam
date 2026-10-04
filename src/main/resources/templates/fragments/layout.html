@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  布局片段：对应 Python 版 base.html（管理端）与 reader_base.html（读者端）。
+  用法（页面模板）：
+    <html th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'books', '图书管理')}">
+      <body><div id="content"> …页面内容… </div></body>
+    </html>
+-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:remove="all">图书管理系统</title>
+</head>
+<body>
+
+<!-- ============ 管理端布局 ============ -->
+<th:block th:fragment="adminLayout(content, active, pageTitle)">
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="|${pageTitle} · 图书管理系统|">图书管理系统</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">书</div>
+      <div class="brand-text">
+        <div class="brand-name" th:text="${conf['library_name']}">我的图书室</div>
+        <div class="brand-sub">图书管理系统</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-item" th:classappend="${active=='dashboard'} ? 'active'" href="/">
+        <span class="nav-ico">🏠</span> 工作台
+        <span class="nav-badge" th:if="${navResets > 0}" th:text="${navResets}"
+              title="有读者在申请重置密码">0</span>
+      </a>
+      <a class="nav-item" th:classappend="${active=='borrow_new'} ? 'active'" href="/borrow/new">
+        <span class="nav-ico">📕</span> 办理借书
+      </a>
+      <a class="nav-item" th:classappend="${active=='books'} ? 'active'" href="/books">
+        <span class="nav-ico">📚</span> 图书管理
+      </a>
+      <a class="nav-item" th:classappend="${active=='readers'} ? 'active'" href="/readers">
+        <span class="nav-ico">👥</span> 读者管理
+      </a>
+      <a class="nav-item" th:classappend="${active=='borrows'} ? 'active'" href="/borrows">
+        <span class="nav-ico">🔄</span> 借阅记录
+        <span class="nav-badge" th:if="${navOverdue > 0}" th:text="${navOverdue}">0</span>
+      </a>
+      <a class="nav-item" th:classappend="${active=='requests'} ? 'active'" href="/requests">
+        <span class="nav-ico">📝</span> 借阅申请
+        <span class="nav-badge" th:if="${navRequests > 0}" th:text="${navRequests}">0</span>
+      </a>
+      <a class="nav-item" th:classappend="${active=='fines'} ? 'active'" href="/fines">
+        <span class="nav-ico">💰</span> 罚金台账
+        <span class="nav-badge" th:if="${navUnpaidFines > 0}" th:text="${navUnpaidFines}">0</span>
+      </a>
+      <a class="nav-item" th:classappend="${active=='reviews'} ? 'active'" href="/reviews">
+        <span class="nav-ico">⭐</span> 书评管理
+      </a>
+      <a class="nav-item" th:classappend="${active=='reports'} ? 'active'" href="/reports">
+        <span class="nav-ico">📊</span> 统计报表
+      </a>
+      <a class="nav-item" th:classappend="${active=='analytics'} ? 'active'" href="/analytics">
+        <span class="nav-ico">🔍</span> 数据分析
+      </a>
+      <a class="nav-item" th:classappend="${active=='settings'} ? 'active'" href="/settings">
+        <span class="nav-ico">⚙️</span> 系统设置
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="today" th:text="|今天是 ${#temporals.format(today, 'yyyy年MM月dd日')}|">今天是</div>
+      <form method="post" action="/logout">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+        <button class="btn btn-ghost btn-block" type="submit">退出登录</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="main">
+    <th:block th:replace="~{fragments/layout :: flashArea}"></th:block>
+    <div th:replace="${content}"></div>
+  </main>
+</div>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>
+</th:block>
+
+<!-- ============ 读者端布局 ============ -->
+<!-- inReader：true=已登录（显示侧栏）；false=未登录（窄版简单头部） -->
+<th:block th:fragment="readerLayout(content, active, pageTitle, inReader)">
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="|${pageTitle} · ${conf['library_name']}|">读者中心</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body th:class="reader-body" th:classappend="${!inReader} ? 'reader-narrow'">
+<div class="layout">
+
+  <aside class="sidebar" th:if="${inReader}">
+    <div class="brand">
+      <div class="brand-logo">书</div>
+      <div class="brand-text">
+        <div class="brand-name" th:text="${conf['library_name']}">我的图书室</div>
+        <div class="brand-sub">读者中心</div>
+      </div>
+    </div>
+
+    <div class="who">
+      <div class="who-name" th:text="${sessionReaderName}">读者</div>
+      <div class="who-sub" th:text="|卡号 ${sessionReaderCard == null or sessionReaderCard == '' ? '—' : sessionReaderCard}|">卡号</div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-item" th:classappend="${active=='books'} ? 'active'" href="/reader">
+        <span class="nav-ico">📚</span> 找书 / 借书
+      </a>
+      <a class="nav-item" th:classappend="${active=='my'} ? 'active'" href="/reader/my">
+        <span class="nav-ico">🔄</span> 我的借阅
+      </a>
+      <a class="nav-item" th:classappend="${active=='profile'} ? 'active'" href="/reader/profile">
+        <span class="nav-ico">👤</span> 我的资料
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="today" th:text="|借期 ${conf['borrow_days']} 天 · 最多借 ${conf['max_books_per_reader']} 册|">借期</div>
+      <form method="get" action="/reader/logout">
+        <button class="btn btn-ghost btn-block" type="submit">退出登录</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="reader-brand-simple" th:if="${!inReader}">
+      <div class="brand-logo">书</div>
+      <div>
+        <div class="brand-name" th:text="${conf['library_name']}">我的图书室</div>
+        <div class="brand-sub">读者中心</div>
+      </div>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: flashArea}"></th:block>
+    <div th:replace="${content}"></div>
+  </main>
+</div>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>
+</th:block>
+
+<!-- ============ 打印布局 ============ -->
+<th:block th:fragment="printLayout(content, pageTitle)">
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title th:text="${pageTitle}">打印</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="print-body" onload="window.print()">
+<div class="print-sheet">
+  <div th:replace="${content}"></div>
+</div>
+</body>
+</html>
+</th:block>
+
+<!-- ============ Flash 提示区（所有布局共用） ============ -->
+<div th:fragment="flashArea">
+  <div class="flash-area" th:if="${flashList != null and !flashList.isEmpty()}">
+    <div th:each="f : ${flashList}" th:class="'flash flash-' + ${f.category}">
+      <span th:text="${f.message}"></span>
+      <button type="button" class="flash-close" onclick="this.parentElement.remove()">×</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 分页（保留当前查询条件，只换页码） ============ -->
+<th:block th:fragment="pagination(page, pages, total)">
+  <div class="pagination" th:if="${pages > 1}">
+    <a th:if="${page > 1}" th:href="${pu.of(page - 1)}">上一页</a>
+    <th:block th:each="p : ${#numbers.sequence(1, pages)}">
+      <span class="current" th:if="${p == page}" th:text="${p}">1</span>
+      <a th:if="${p != page and (p <= 2 or p > pages - 2 or (p >= page - 1 and p <= page + 1))}"
+         th:href="${pu.of(p)}" th:text="${p}">1</a>
+      <span class="info" th:if="${p == 3 and page > 4}">…</span>
+      <span class="info" th:if="${p == pages - 2 and page < pages - 3}">…</span>
+    </th:block>
+    <a th:if="${page < pages}" th:href="${pu.of(page + 1)}">下一页</a>
+    <span class="info" th:text="|共 ${total} 条 · 第 ${page}/${pages} 页|">共 0 条</span>
+  </div>
+  <div class="pagination" th:if="${pages <= 1 and total > 0}">
+    <span class="info" th:text="|共 ${total} 条|">共 0 条</span>
+  </div>
+</th:block>
+
+</body>
+</html>

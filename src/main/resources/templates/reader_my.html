@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: readerLayout(~{::#content}, 'my', '我的借阅', ${isReader})}">
+<body>
+<div id="content">
+
+  <div class="stat-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+    <div class="stat-card">
+      <div class="stat-label">正在借</div>
+      <div class="stat-value"><span th:text="${#lists.size(activeRecords)}">0</span><small th:text="|/ ${maxBooks} 册|">/ 5 册</small></div>
+    </div>
+    <div class="stat-card" th:classappend="${unpaid > 0} ? 'danger'">
+      <div class="stat-label">未缴罚金</div>
+      <div class="stat-value"><span th:text="${money.of(unpaid)}">0.00</span><small>元</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">累计借阅</div>
+      <div class="stat-value"><span th:text="${#lists.size(activeRecords) + #lists.size(history)}">0</span><small>次</small></div>
+    </div>
+  </div>
+
+  <div class="notice danger" th:if="${unpaid > 0}">
+    ⚠️ 你有 <b th:text="|${money.of(unpaid)} 元罚金还没交|"></b><th:block th:if="${overdueNow > 0}" th:text="|（其中 ${overdueNow} 册书还在逾期）|"></th:block>。
+    请到图书室前台处理；有书没还的话请尽快归还。
+    <div style="margin-top:10px;">
+      <div th:each="r : ${myUnpaidFines}"
+           style="display:flex;justify-content:space-between;gap:10px;align-items:center;
+                  flex-wrap:wrap;padding:6px 0;border-top:1px dashed #fecaca;">
+        <span>《<span th:text="${r.bookTitle}"></span>》· 罚金 <b th:text="|${money.of(r.fine)} 元|"></b></span>
+        <th:block th:if="${r.fineClaim != null and r.fineClaim != ''}">
+          <span class="badge badge-info">已提交缴纳申请，等管理员确认</span>
+        </th:block>
+        <th:block th:if="${r.fineClaim == null or r.fineClaim == ''}">
+          <a class="btn btn-sm btn-primary" th:href="@{/reader/fine/{id}/pay(id=${r.id})}">去缴纳</a>
+        </th:block>
+      </div>
+      <div class="field-hint" style="margin-top:6px;">
+        线上缴纳是"提交申请 → 管理员确认收到钱"两步；具体收款方式（微信 / 支付宝 / 现金）请听管理员安排。
+      </div>
+    </div>
+  </div>
+
+  <div class="card" th:if="${!myRequests.isEmpty()}">
+    <div class="card-head">
+      <h2 class="card-title">我申请的借阅</h2>
+      <div class="card-sub">请到图书室取书，管理员核对后正式借出</div>
+    </div>
+    <div class="card-body">
+      <div class="my-card" th:each="rq : ${myRequests}">
+        <div>
+          <div class="title" th:text="|《${rq.bookTitle}》|"></div>
+          <div class="meta" th:text="|${rq.bookAuthor == null ? '' : rq.bookAuthor} · 申请时间 ${rq.createdAt}|"></div>
+          <div class="meta">
+            <b class="text-danger" th:if="${rq.status == '可借'}">书已经还回来了，请尽快到图书室取书</b>
+            <th:block th:if="${rq.status != '可借'}">
+              <b class="text-warn">等待中</b>：书到馆后会通知你（留了邮箱会发邮件）
+            </th:block>
+          </div>
+        </div>
+        <div class="right">
+          <span class="badge badge-ok" th:if="${rq.status == '可借'}">书已到馆</span>
+          <span class="badge badge-warn" th:if="${rq.status != '可借'}">申请中</span>
+          <div style="margin-top:8px;">
+            <form class="inline-form" method="post"
+                  th:action="@{/reader/request/{id}/cancel(id=${rq.id})}"
+                  th:attr="data-confirm-title='取消申请',data-confirm-ok='确认取消'"
+                  th:data-confirm="|取消对《${rq.bookTitle}》的借阅申请？|">
+              <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+              <button class="btn btn-sm" type="submit">取消申请</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">正在借的书</h2>
+      <div class="card-sub" th:text="|续借一次可再借 ${borrowDays} 天，最多续借 ${maxRenew} 次|"></div>
+    </div>
+    <div class="card-body">
+      <th:block th:if="${!activeRecords.isEmpty()}">
+        <div class="my-card" th:each="r : ${activeRecords}"
+             th:classappend="${r.status == '已逾期'} ? 'overdue'">
+          <div>
+            <div class="title" th:text="|《${r.bookTitle}》|"></div>
+            <div class="meta">
+              <span th:text="${r.bookAuthor == null ? '' : r.bookAuthor}"></span>
+              <th:block th:if="${r.bookLocation != null and r.bookLocation != ''}"
+                        th:text="| · 书架 ${r.bookLocation}|"></th:block>
+              <span th:text="| · 借出 ${r.borrowDate}|"></span>
+            </div>
+            <div class="meta">
+              应还日期：<b th:text="${r.dueDate}"></b>
+              <span th:if="${r.renewCount != null and r.renewCount > 0}"
+                    th:text="|· 已续借 ${r.renewCount} 次|"></span>
+            </div>
+          </div>
+          <div class="right">
+            <th:block th:if="${r.status == '已逾期'}">
+              <div><span class="badge badge-danger" th:text="|已逾期 ${r.overdueDays} 天|"></span></div>
+              <div class="meta" th:text="|应缴罚金约 ${money.of(r.fine)} 元|"></div>
+            </th:block>
+            <th:block th:if="${r.status != '已逾期' and r.daysLeft != null and r.daysLeft <= 3}">
+              <div><span class="badge badge-warn" th:text="|还剩 ${r.daysLeft} 天|"></span></div>
+            </th:block>
+            <th:block th:if="${r.status != '已逾期' and (r.daysLeft == null or r.daysLeft > 3)}">
+              <div><span class="badge badge-ok" th:text="|还剩 ${r.daysLeft} 天|"></span></div>
+            </th:block>
+            <div style="margin-top:8px;">
+              <th:block th:if="${r.status == '已逾期'}">
+                <span class="field-hint">逾期不能续借，请先还书</span>
+              </th:block>
+              <th:block th:if="${r.status != '已逾期' and r.renewCount >= maxRenew}">
+                <span class="field-hint">已用完续借次数</span>
+              </th:block>
+              <th:block th:if="${r.status != '已逾期' and r.renewCount < maxRenew}">
+                <form class="inline-form" method="post"
+                      th:action="@{/reader/renew/{id}(id=${r.id})}"
+                      th:attr="data-confirm-title='确认续借',data-confirm-ok='确认续借',
+                               data-confirm-input='续借天数',data-confirm-input-name='days',
+                               data-confirm-input-value=${borrowDays}"
+                      th:data-confirm="|《${r.bookTitle}》当前应还日期：${r.dueDate}。填好天数后会从这一天往后延。|">
+                  <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+                  <button class="btn btn-sm" type="submit">续借</button>
+                </form>
+              </th:block>
+            </div>
+          </div>
+        </div>
+        <div class="field-hint">
+          还书请把书带到图书室前台，由管理员在系统里办理归还（网上不能自己点还书）。
+        </div>
+      </th:block>
+      <div class="empty" th:if="${activeRecords.isEmpty()}">
+        <span class="empty-ico">📚</span>
+        你现在没有借着书，<a th:href="@{/reader}">去找书借一本</a>。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">以前借过的书</h2></div>
+    <div class="card-body tight">
+      <div class="table-wrap" th:if="${!history.isEmpty()}">
+        <table class="table">
+          <thead>
+          <tr><th>书名</th><th class="nowrap">借出</th><th class="nowrap">应还</th>
+              <th class="nowrap">归还</th><th class="nowrap">结果</th></tr>
+          </thead>
+          <tbody>
+          <tr th:each="r : ${history}">
+            <td class="cell-main">
+              <span th:text="${r.bookTitle}"></span>
+              <div class="cell-sub">
+                <a th:href="@{/reader/review/{id}(id=${r.bookId})}">写评价</a>
+              </div>
+            </td>
+            <td class="nowrap" th:text="${r.borrowDate}"></td>
+            <td class="nowrap" th:text="${r.dueDate}"></td>
+            <td class="nowrap" th:text="${r.returnDate}"></td>
+            <td class="nowrap">
+              <th:block th:if="${r.overdueDays != null and r.overdueDays > 0}">
+                <span class="badge badge-warn" th:text="|逾期 ${r.overdueDays} 天归还|"></span>
+                <th:block th:if="${r.fine != null and r.fine > 0}">
+                  <div class="cell-sub">
+                    罚金 <span th:text="${money.of(r.fine)}"></span> 元
+                    <span class="badge badge-ok" th:if="${r.finePaid == 1}">已交</span>
+                    <span class="badge badge-info"
+                          th:if="${r.finePaid != 1 and r.fineClaim != null and r.fineClaim != ''}">已申请，等确认</span>
+                    <span class="badge badge-danger"
+                          th:if="${r.finePaid != 1 and (r.fineClaim == null or r.fineClaim == '')}">未交</span>
+                  </div>
+                </th:block>
+              </th:block>
+              <th:block th:if="${r.overdueDays == null or r.overdueDays == 0}">
+                <span class="badge badge-muted">按时归还</span>
+              </th:block>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${history.isEmpty()}">还没有归还记录</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

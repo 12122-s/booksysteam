@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'books', '图书管理')}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">图书管理</h1>
+      <p class="page-desc" th:text="|共 ${total} 种图书。可以搜书名、作者、ISBN、出版社或分类。|">共 0 种图书。</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-primary" th:href="@{/books/new}">＋ 新增图书</a>
+      <a class="btn" th:href="@{/books/import}">📥 批量导入</a>
+      <a class="btn" th:href="@{/print/labels(q=${q == null or q == '' ? null : q})}">🖨 打印书标</a>
+      <a class="btn" th:href="@{/export/books.csv}">⬇ 导出图书清单</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form class="filter-bar" method="get" th:action="@{/books}">
+        <input class="input grow" type="text" name="q" th:value="${q}" data-select-on-focus=""
+               placeholder="搜索书名 / 作者 / ISBN / 出版社 / 分类"/>
+        <select class="select" name="category">
+          <option value="">全部分类</option>
+          <option th:each="c : ${categories}" th:value="${c}"
+                  th:selected="${c == category}" th:text="${c}"></option>
+        </select>
+        <label class="text-muted" style="display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" name="available" value="1" th:checked="${onlyAvailable}"/>
+          只看还有可借的
+        </label>
+        <button class="btn btn-primary" type="submit">搜索</button>
+        <a class="btn" th:if="${(q != null and q != '') or (category != null and category != '') or onlyAvailable}"
+           th:href="@{/books}">清空条件</a>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body tight">
+      <div class="table-wrap" th:if="${!books.isEmpty()}">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>书名 / 作者</th><th>分类</th><th>ISBN</th><th>出版社</th>
+              <th class="nowrap">馆藏位置</th><th class="nowrap">总册数</th>
+              <th class="nowrap">可借</th><th class="nowrap">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="b : ${books}">
+              <td>
+                <div style="display:flex;gap:10px;align-items:center;">
+                  <img th:if="${b.cover != null and b.cover != ''}"
+                       th:src="@{/uploads/covers/{name}(name=${b.cover})}" th:alt="${b.title}"
+                       style="width:38px;height:52px;object-fit:cover;border-radius:4px;
+                              box-shadow:0 2px 6px -3px rgba(15,23,42,.5);flex:0 0 38px;"/>
+                  <div th:if="${b.cover == null or b.cover == ''}"
+                       style="width:38px;height:52px;border:1px dashed #cbd5e1;border-radius:4px;
+                              display:flex;align-items:center;justify-content:center;
+                              color:#cbd5e1;font-size:11px;flex:0 0 38px;">无</div>
+                  <div>
+                    <div class="cell-main" th:text="${b.title}">书名</div>
+                    <div class="cell-sub"
+                         th:text="|${b.author == null or b.author == '' ? '作者未填' : b.author}${b.publishYear != null and b.publishYear != 0 ? ' · ' + b.publishYear + ' 年' : ''}|">作者未填</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge badge-info" th:if="${b.category != null and b.category != ''}"
+                      th:text="${b.category}">分类</span>
+                <span class="text-muted" th:if="${b.category == null or b.category == ''}">未分类</span>
+              </td>
+              <td class="nowrap" th:text="${b.isbn == null or b.isbn == '' ? '—' : b.isbn}">—</td>
+              <td th:text="${b.publisher == null or b.publisher == '' ? '—' : b.publisher}">—</td>
+              <td class="nowrap" th:text="${b.location == null or b.location == '' ? '—' : b.location}">—</td>
+              <td class="nowrap" th:text="${b.totalCopies}">1</td>
+              <td class="nowrap">
+                <span class="badge badge-ok" th:if="${b.availableCopies != null and b.availableCopies > 0}"
+                      th:text="|${b.availableCopies} 册|">1 册</span>
+                <span class="badge badge-danger" th:unless="${b.availableCopies != null and b.availableCopies > 0}">已借完</span>
+                <div class="cell-sub" th:if="${b.outCount != null and b.outCount > 0}"
+                     th:text="|外借 ${b.outCount} 册|">外借 0 册</div>
+              </td>
+              <td class="nowrap">
+                <div class="actions">
+                  <a class="btn btn-sm" th:href="@{/books/{id}/history(id=${b.id})}">历史</a>
+                  <a class="btn btn-sm" th:href="@{/books/{id}/edit(id=${b.id})}">编辑</a>
+                  <form class="inline-form" method="post" th:action="@{/books/{id}/delete(id=${b.id})}"
+                        data-confirm-title="确认删除这本书"
+                        data-confirm-ok="确认删除"
+                        data-confirm-danger=""
+                        th:data-confirm="|《${b.title}》
+删除后图书列表里就没有这本书了（借阅历史会保留）。|">
+                    <input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
+                    <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${books.isEmpty()}">
+        <span class="empty-ico">🔍</span>
+        <th:block th:if="${(q != null and q != '') or (category != null and category != '')}">没有找到符合条件的图书，换个关键词试试。</th:block>
+        <th:block th:if="${(q == null or q == '') and (category == null or category == '')}">还没有图书，点右上角「新增图书」开始录入。</th:block>
+      </div>
+    </div>
+    <div th:replace="~{fragments/layout :: pagination(${page}, ${pages}, ${total})}"></div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: readerLayout(~{::#content}, 'books', '找书 / 借书', ${isReader})}">
+<body>
+<div id="content">
+
+  <div th:replace="~{fragments/rules :: rulesBox(${announcement})}"></div>
+
+  <div class="card" th:if="${!myActive.isEmpty()}">
+    <div class="card-body" style="padding:12px 16px;">
+      <div class="field-label" style="margin:0;"
+           th:text="|你当前借着 ${borrowing} 册书（最多 ${maxBooks} 册）|">你当前借着 0 册书</div>
+      <div class="cell-sub" style="margin-top:4px;" th:each="r : ${myActive}">
+        《<span th:text="${r.bookTitle}">书名</span>》· 应还 <span th:text="${r.dueDate}"></span>
+        <th:block th:if="${r.status == '已逾期'}">
+          <span class="badge badge-danger" th:text="|已逾期 ${r.overdueDays} 天|">已逾期</span>
+        </th:block>
+        <th:block th:if="${r.status != '已逾期' and r.daysLeft != null and r.daysLeft <= 3}">
+          <span class="badge badge-warn" th:text="|还剩 ${r.daysLeft} 天|">还剩</span>
+        </th:block>
+      </div>
+      <div style="margin-top:8px;"><a class="btn btn-sm" th:href="@{/reader/my}">查看我的借阅</a></div>
+    </div>
+  </div>
+
+  <div class="notice warn" th:if="${!allowSelfBorrow}">
+    图书室目前关闭了"在线自助借书"：你可以在这里查书、看自己借了什么，
+    借书请到图书室前台找管理员办理。
+  </div>
+
+  <div class="notice warn" th:if="${reader.status == '待审核'}">
+    你的办卡申请还在等图书室管理员确认，确认后就能借书了。现在可以先查书、看规则。
+  </div>
+
+  <div class="card" th:if="${!recommends.isEmpty()}">
+    <div class="card-head">
+      <h2 class="card-title">✨ 猜你可能想看</h2>
+      <div class="card-sub"
+           th:text="${recommends[0].personalised} ? '根据你借过的书挑的' : '你还没有借阅记录，先看看大家借得最多的'">
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="reco-list">
+        <div class="reco-item" th:each="item : ${recommends}">
+          <div class="reco-title" th:text="|《${item.book.title}》|"></div>
+          <div class="reco-sub">
+            <span th:text="${item.book.author == null or item.book.author == '' ? '作者未填' : item.book.author}"></span>
+            <th:block th:if="${item.book.category != null and item.book.category != ''}"
+                      th:text="|· ${item.book.category}|"></th:block>
+          </div>
+          <div class="reco-reason" th:text="${item.reason}"></div>
+        </div>
+      </div>
+      <div class="field-hint">
+        推荐逻辑：先看你借过书的分类偏好，再在这些分类里挑没借过、当前有库存的书；
+        没有借阅记录时，退回到"馆内最热门"。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form class="filter-bar" method="get" th:action="@{/reader}">
+        <input class="input grow" type="text" name="q" th:value="${q}" data-select-on-focus
+               placeholder="输入书名、作者或分类">
+        <select class="select" name="category">
+          <option value="">全部分类</option>
+          <option th:each="c : ${categories}" th:value="${c}" th:text="${c}"
+                  th:selected="${c == category}">分类</option>
+        </select>
+        <label class="text-muted" style="display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" name="only_available" value="1" th:checked="${onlyAvailable}">
+          只看现在能借的
+        </label>
+        <button class="btn btn-primary" type="submit">搜索</button>
+        <a class="btn" th:if="${q != '' or category != '' or onlyAvailable}"
+           th:href="@{/reader}">清空</a>
+      </form>
+    </div>
+  </div>
+
+  <div class="book-list" th:if="${!books.isEmpty()}">
+    <div class="book-item" th:each="b : ${books}"
+         th:classappend="${myBookIds.contains(b.id)} ? 'mine'">
+      <img th:if="${b.cover != null and b.cover != ''}"
+           th:src="@{/uploads/covers/{n}(n=${b.cover})}"
+           th:alt="|${b.title}封面|"
+           style="width:64px;height:88px;object-fit:cover;border-radius:6px;flex:0 0 64px;
+                  box-shadow:0 4px 12px -6px rgba(15,23,42,.6);">
+      <div class="info">
+        <div class="title" th:text="|《${b.title}》|"></div>
+        <div class="meta">
+          <span th:text="${b.author == null or b.author == '' ? '作者未填' : b.author}"></span>
+          <th:block th:if="${b.category != null and b.category != ''}"
+                    th:text="| · ${b.category}|"></th:block>
+          <th:block th:if="${b.publisher != null and b.publisher != ''}"
+                    th:text="| · ${b.publisher}|"></th:block>
+        </div>
+        <div class="meta">
+          <th:block th:if="${b.location != null and b.location != ''}"
+                    th:text="|书架位置：${b.location} · |"></th:block>
+          现在可借 <span th:text="${b.availableCopies}">0</span> 册（共 <span th:text="${b.totalCopies}">0</span> 册）
+        </div>
+        <th:block th:if="${reviewStats[b.id] != null}"
+                  th:with="stats=${reviewStats[b.id]}">
+          <div class="meta">
+            <span style="color:#f59e0b;"
+                  th:with="full=${stats.fullStars}"
+                  th:text="${'★★★★★'.substring(0, full)}">★★★</span>
+            <b th:text="${stats.avg}">0</b> 分 · <span th:text="${stats.count}">0</span> 条评价
+          </div>
+          <details class="rules-box" style="margin:6px 0 0;box-shadow:none;">
+            <summary style="padding:6px 10px;font-size:12.5px;">看看大家怎么说</summary>
+            <div style="padding:6px 10px 8px;">
+              <div th:if="${reviewLatest[b.id] != null}" th:each="rv : ${reviewLatest[b.id]}"
+                   style="padding:4px 0;border-bottom:1px dashed #e5e7eb;font-size:12.5px;">
+                <span style="color:#f59e0b;"
+                      th:text="${'★★★★★'.substring(0, rv.rating)}">★★★</span>
+                <span class="text-muted"
+                      th:text="|${rv.readerName} · ${rv.createdAt != null and rv.createdAt.length() >= 10 ? rv.createdAt.substring(0, 10) : rv.createdAt}|"></span>
+                <div th:text="${rv.content == null or rv.content == '' ? '（只打了分）' : rv.content}"></div>
+              </div>
+            </div>
+          </details>
+        </th:block>
+        <div class="meta" th:if="${b.summary != null and b.summary != ''}"
+             th:text="${b.summary}"></div>
+      </div>
+      <div class="side">
+        <th:block th:if="${myBookIds.contains(b.id)}">
+          <span class="badge badge-info">你已经借了这本</span>
+          <a class="btn btn-sm" th:href="@{/reader/my}">去我的借阅</a>
+        </th:block>
+        <th:block th:if="${!myBookIds.contains(b.id) and b.availableCopies <= 0}">
+          <span class="badge badge-muted">已借完</span>
+          <form method="post" th:action="@{/reader/request/{id}(id=${b.id})}"
+                th:attr="data-confirm-title='预约这本书',data-confirm-ok='确认预约'"
+                th:data-confirm="|《${b.title}》现在都借出去了。预约后，有书还回来时会通知你（留了邮箱会发邮件），请到图书室取书。|">
+            <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+            <button class="btn btn-sm" type="submit">预约</button>
+          </form>
+        </th:block>
+        <th:block th:if="${!myBookIds.contains(b.id) and b.availableCopies > 0 and !allowSelfBorrow}">
+          <span class="badge badge-warn">请到前台借</span>
+        </th:block>
+        <th:block th:if="${!myBookIds.contains(b.id) and b.availableCopies > 0 and allowSelfBorrow}">
+          <span class="badge badge-ok">可以借</span>
+          <th:block th:if="${needApproval}">
+            <form method="post" th:action="@{/reader/request/{id}(id=${b.id})}"
+                  th:attr="data-confirm-title='申请借阅',data-confirm-ok='提交申请'"
+                  th:data-confirm="|《${b.title}》申请后请到图书室取书，由管理员核对后办理借出（申请不占用册数）。|">
+              <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+              <button class="btn btn-primary btn-sm" type="submit">申请借阅</button>
+            </form>
+          </th:block>
+          <th:block th:if="${!needApproval}">
+            <form method="post" th:action="@{/reader/borrow/{id}(id=${b.id})}"
+                  th:attr="data-confirm-title='确认借这本书',data-confirm-ok='确认借出'"
+                  th:data-confirm="|《${b.title}》${b.author == null ? '' : b.author} 借期 ${borrowDays} 天，借出后请到图书室取书。|">
+              <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+              <button class="btn btn-primary btn-sm" type="submit">借这本书</button>
+            </form>
+          </th:block>
+        </th:block>
+      </div>
+    </div>
+  </div>
+  <div class="card" th:if="${books.isEmpty()}">
+    <div class="empty">
+      <span class="empty-ico">🔍</span>
+      没有找到符合条件的书。换个关键词试试，或勾选"包括已借完的"看看。
+    </div>
+  </div>
+
+  <div th:replace="~{fragments/layout :: pagination(${page}, ${pages}, ${total})}"></div>
+
+</div>
+</body>
+</html>

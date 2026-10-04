@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'fines', '罚金台账')}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">罚金台账</h1>
+      <p class="page-desc">还书时算出的逾期罚金都在这里，可以标记"已收"或"减免"。</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" th:href="@{/borrows}">← 借阅记录</a>
+      <a class="btn" th:href="@{/export/borrows.csv}">⬇ 导出借阅记录</a>
+    </div>
+  </div>
+
+  <div class="stat-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+    <div class="stat-card">
+      <div class="stat-label">罚金笔数</div>
+      <div class="stat-value"><span th:text="${stats['count']}">0</span><small>笔</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">合计罚金</div>
+      <div class="stat-value"><span th:text="${money.of(stats['total'])}">0.00</span><small>元</small></div>
+    </div>
+    <div class="stat-card ok">
+      <div class="stat-label">已收 / 已处理</div>
+      <div class="stat-value"><span th:text="${money.of(stats['paid'])}">0.00</span><small>元</small></div>
+    </div>
+    <div class="stat-card" th:classappend="${stats['unpaid'] != null and stats['unpaid'] > 0} ? 'danger'">
+      <div class="stat-label">未收</div>
+      <div class="stat-value"><span th:text="${money.of(stats['unpaid'])}">0.00</span><small>元</small></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <a class="tab" th:classappend="${status == ''} ? 'active'" th:href="@{/fines}">全部</a>
+    <a class="tab" th:classappend="${status == 'unpaid'} ? 'active'"
+       th:href="@{/fines(status='unpaid')}">未收</a>
+    <a class="tab" th:classappend="${status == 'paid'} ? 'active'"
+       th:href="@{/fines(status='paid')}">已收 / 减免</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body tight">
+      <div class="table-wrap" th:if="${!records.isEmpty()}">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>读者</th><th>书名</th><th class="nowrap">应还日期</th>
+              <th class="nowrap">归还日期</th><th class="nowrap">逾期</th>
+              <th class="nowrap">罚金</th><th class="nowrap">收款状态</th>
+              <th class="nowrap">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${records}"
+                th:classappend="${r.finePaid == null or r.finePaid != 1} ? 'row-overdue'">
+              <td>
+                <div class="cell-main" th:text="${r.readerName}">读者</div>
+                <div class="cell-sub"
+                     th:text="${r.cardNo + (r.phone != null and r.phone != '' ? ' · ' + r.phone : '')}">卡号</div>
+              </td>
+              <td th:text="${r.bookTitle}">书名</td>
+              <td class="nowrap" th:text="${r.dueDate}"></td>
+              <td class="nowrap" th:text="${r.returnDate}"></td>
+              <td class="nowrap" th:text="|${r.overdueDays} 天|">0 天</td>
+              <td class="nowrap text-bold" th:classappend="${r.finePaid == null or r.finePaid != 1} ? 'text-danger'"
+                  th:text="|${money.of(r.fine)} 元|">0.00 元</td>
+              <td class="nowrap">
+                <th:block th:if="${r.finePaid != null and r.finePaid == 1}">
+                  <span class="badge badge-ok">已处理</span>
+                  <div class="cell-sub"
+                       th:text="${(r.finePaidAt == null ? '' : r.finePaidAt) + (r.fineNote != null and r.fineNote != '' ? ' · ' + r.fineNote : '')}"></div>
+                </th:block>
+                <th:block th:if="${(r.finePaid == null or r.finePaid != 1) and r.fineClaim != null and r.fineClaim != ''}">
+                  <span class="badge badge-info">读者已申请缴纳</span>
+                  <div class="cell-sub" th:text="|${r.fineClaimAt} · 请核对到账后点「标记已收」|"></div>
+                </th:block>
+                <span class="badge badge-danger"
+                      th:if="${(r.finePaid == null or r.finePaid != 1) and (r.fineClaim == null or r.fineClaim == '')}">未收</span>
+              </td>
+              <td class="nowrap">
+                <th:block th:if="${r.finePaid != null and r.finePaid == 1}">
+                  <form class="inline-form" method="post"
+                        th:action="@{/fines/{id}/mark(id=${r.id})}"
+                        data-confirm-title="改回未收"
+                        data-confirm-ok="确认"
+                        data-confirm="把这笔罚金改回「未收」状态？">
+                    <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                    <input type="hidden" name="action" value="unpaid" />
+                    <input type="hidden" name="back_status" th:value="${status}" />
+                    <button class="btn btn-sm" type="submit">改回未收</button>
+                  </form>
+                </th:block>
+                <th:block th:if="${r.finePaid == null or r.finePaid != 1}">
+                  <div class="actions">
+                    <form class="inline-form" method="post"
+                          th:action="@{/fines/{id}/mark(id=${r.id})}"
+                          data-confirm-title="确认收到罚金"
+                          data-confirm-ok="确认已收"
+                          th:data-confirm="|${r.readerName} 的罚金 ${money.of(r.fine)} 元已收到？|">
+                      <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                      <input type="hidden" name="action" value="paid" />
+                      <input type="hidden" name="back_status" th:value="${status}" />
+                      <button class="btn btn-sm btn-ok" type="submit">标记已收</button>
+                    </form>
+                    <form class="inline-form" method="post"
+                          th:action="@{/fines/{id}/mark(id=${r.id})}"
+                          data-confirm-title="减免这笔罚金"
+                          data-confirm-ok="确认减免"
+                          data-confirm-danger=""
+                          th:data-confirm="|把 ${r.readerName} 的罚金改成 0 元（减免）？|">
+                      <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                      <input type="hidden" name="action" value="waive" />
+                      <input type="hidden" name="back_status" th:value="${status}" />
+                      <button class="btn btn-sm btn-danger" type="submit">减免</button>
+                    </form>
+                  </div>
+                </th:block>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${records.isEmpty()}"><span class="empty-ico">💰</span>没有符合条件的罚金记录</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'analytics', '数据分析')}">
+<body>
+<div id="content">
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">数据分析看板</h1>
+    <p class="page-desc">从借阅记录里看趋势和结构：谁在借、借什么、还得按时吗。数据缓存 2 分钟。</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" th:href="@{/export/borrows.csv}">⬇ 导出借阅记录</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">近 12 个月借出</div>
+    <div class="stat-value"><span th:text="${trend.totalBorrowed}">0</span><small>次</small></div>
+  </div>
+  <div class="stat-card ok">
+    <div class="stat-label">按时归还率</div>
+    <div class="stat-value"><span th:text="${returns.onTimeRate}">0</span><small>%</small></div>
+  </div>
+  <div class="stat-card" th:classappend="${returns.overdueRate > 20} ? 'danger'">
+    <div class="stat-label">逾期归还率</div>
+    <div class="stat-value"><span th:text="${returns.overdueRate}">0</span><small>%</small></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">平均借阅时长</div>
+    <div class="stat-value"><span th:text="${durations.average}">0</span><small>天</small></div>
+  </div>
+</div>
+
+<!-- ===================== 借阅趋势（手写 SVG 折线） ===================== -->
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">📈 近 12 个月借阅趋势</h2>
+    <div class="card-sub" th:text="|峰值 ${trend.peak} 次/月|">峰值 0 次/月</div>
+  </div>
+  <div class="card-body">
+    <div class="chart-legend">
+      <span class="legend-item"><i class="dot dot-borrowed"></i>借出</span>
+      <span class="legend-item"><i class="dot dot-returned"></i>归还</span>
+    </div>
+    <svg class="trend-svg" th:attr="viewBox=|0 0 ${chartWidth} ${chartHeight}|"
+         role="img" aria-label="近 12 个月借出与归还趋势折线图">
+      <line class="trend-grid" th:each="i : ${#numbers.sequence(0, 4)}"
+            th:attr="x1=${chartWidth - 30},y1=${30 + i * (chartHeight - 60) / 4},y2=${30 + i * (chartHeight - 60) / 4}"
+            x2="30"></line>
+      <polyline class="trend-area-returned" th:attr="points=${trend.returnedPoints}" />
+      <polyline class="trend-line trend-returned" th:attr="points=${trend.returnedPoints}">
+        <title th:text="|归还量：${#strings.listJoin(trend.returned, '、')}|">归还量</title>
+      </polyline>
+      <polyline class="trend-line trend-borrowed" th:attr="points=${trend.borrowedPoints}">
+        <title th:text="|借出量：${#strings.listJoin(trend.borrowed, '、')}|">借出量</title>
+      </polyline>
+    </svg>
+    <div class="trend-axis">
+      <span th:each="label : ${trend.labelsShort}" th:text="${label}">月</span>
+    </div>
+    <div class="field-hint">
+      横轴是月份，纵轴是次数。蓝线是借出量，橙线是归还量；两条线贴得近说明
+      "借得快还得也快"，橙线长期低于蓝线说明有书积压在读者手里。
+      <br />只统计<strong>已经过完的月份</strong>——当月还没结束，算进来会是一根假摔到 0 的线。
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <!-- ===================== 分类热度 ===================== -->
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">📚 分类借阅热度</h2>
+      <div class="card-sub">被借次数最多的类别</div>
+    </div>
+    <div class="card-body">
+      <th:block th:if="${!categories.isEmpty()}">
+        <div class="bar-row" th:each="c : ${categories}">
+          <div class="bar-label" th:text="${c.name}">分类</div>
+          <div class="bar-track">
+            <div class="bar-fill cool" th:style="|width: ${c.percent}%|"></div>
+          </div>
+          <div class="bar-value" th:text="|${c.display} 次|">0 次</div>
+        </div>
+        <div class="field-hint">这条曲线直接告诉你"该多买哪类书"。</div>
+      </th:block>
+      <div class="empty" th:if="${categories.isEmpty()}">还没有借阅记录</div>
+    </div>
+  </div>
+
+  <!-- ===================== 归还情况（环形图） ===================== -->
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">🎯 借出去的书的去向</h2>
+      <div class="card-sub" th:text="|共 ${returns.total} 条记录|">共 0 条记录</div>
+    </div>
+    <div class="card-body">
+      <th:block th:if="${returns.total > 0}">
+      <div class="donut-wrap">
+        <div class="donut" th:style="'background: ' + ${returns.gradient} + ';'">
+          <div class="donut-hole">
+            <div class="donut-num" th:text="|${returns.onTimeRate}%|">0%</div>
+            <div class="donut-cap">按时归还</div>
+          </div>
+        </div>
+        <ul class="donut-legend">
+          <li th:each="s : ${returns.segments}">
+            <i class="dot" th:style="'background: ' + ${s['color']} + ';'"></i>
+            <span class="donut-name" th:text="${s['name']}">名称</span>
+            <span class="donut-val" th:text="|${s['value']} 条 · ${s['percent']}%|">0 条 · 0%</span>
+          </li>
+        </ul>
+      </div>
+      <div class="field-hint">
+        按时归还率只统计"已经还回来的书"（<span th:text="${returns.finished}">0</span> 条），
+        这样不会被"还在借的书"稀释掉真实情况。
+      </div>
+      </th:block>
+      <div class="empty" th:if="${returns.total == 0}">还没有借阅记录</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <!-- ===================== 借阅时长分布 ===================== -->
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">⏱ 借阅时长分布</h2>
+      <div class="card-sub" th:text="|平均 ${durations.average} 天|">平均 0 天</div>
+    </div>
+    <div class="card-body">
+      <th:block th:if="${!durations.buckets.isEmpty() and durations.peak > 1}">
+      <div class="month-chart">
+        <div class="month-col" th:each="d : ${durations.buckets}">
+          <div class="month-num" th:text="${d.display}">0</div>
+          <div class="month-bar cool" th:style="|height: ${d.percent}%|"></div>
+          <div class="month-label" th:text="${d.name}">段</div>
+        </div>
+      </div>
+      <div class="field-hint">只统计已归还的书。集中在"一周内"说明读者周转很快。</div>
+      </th:block>
+      <div class="empty" th:if="${durations.buckets.isEmpty() or !(durations.peak > 1)}">还没有归还记录</div>
+    </div>
+  </div>
+
+  <!-- ===================== 图书周转率 ===================== -->
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">🔄 图书周转率 Top 8</h2>
+      <div class="card-sub">借阅次数 ÷ 藏书册数</div>
+    </div>
+    <div class="card-body">
+      <th:block th:if="${!turnover.isEmpty()}">
+        <div class="bar-row" th:each="t : ${turnover}">
+          <div class="bar-label" th:title="${t.name}" th:text="${t.name}">书名</div>
+          <div class="bar-track">
+            <div class="bar-fill warm" th:style="|width: ${t.percent}%|"></div>
+          </div>
+          <div class="bar-value" th:text="${t.display}">0</div>
+        </div>
+        <div class="field-hint">
+          周转率高 = 这本书"一本顶几本用"，说明复本买得值；
+          长期为 0 的书是"压库"的，可以考虑下架或调剂。
+        </div>
+      </th:block>
+      <div class="empty" th:if="${turnover.isEmpty()}">还没有借阅记录</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 读者活跃度 ===================== -->
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">🏅 读者活跃度 Top 10</h2>
+    <div class="card-sub">借书最多的读者</div>
+  </div>
+  <div class="card-body">
+    <th:block th:if="${!readers.isEmpty()}">
+      <div class="bar-row" th:each="r : ${readers}">
+        <div class="bar-label"><span th:text="${r.name}">名</span><span class="bar-sub" th:text="${r.sub}">单位</span></div>
+        <div class="bar-track">
+          <div class="bar-fill strong" th:style="|width: ${r.percent}%|"></div>
+        </div>
+        <div class="bar-value" th:text="|${r.display} 次|">0 次</div>
+      </div>
+    </th:block>
+    <div class="empty" th:if="${readers.isEmpty()}">还没有借阅记录</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

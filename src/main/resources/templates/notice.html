@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'notice', '公告与借阅规则')}">
+<body>
+<div id="content">
+
+  <div class="reader-brand-simple">
+    <div class="brand-logo">书</div>
+    <div>
+      <div class="brand-name" th:text="${libraryName}">我的图书室</div>
+      <div class="brand-sub">公告与借阅规则</div>
+    </div>
+  </div>
+
+  <div class="card" th:if="${announcement != null and !announcement.isEmpty()}">
+    <div class="card-head"><h2 class="card-title">📢 公告</h2></div>
+    <div class="card-body" style="white-space:pre-line;line-height:1.9;" th:text="${announcement}">
+      公告内容
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">📖 借阅规则</h2></div>
+    <div class="card-body">
+      <div class="detail-list" style="grid-template-columns:1fr;">
+        <div class="detail-item"><span class="k">借期</span>
+          <span class="v" th:text="|${borrowDays} 天|">30 天</span></div>
+        <div class="detail-item"><span class="k">可借册数</span>
+          <span class="v" th:text="|每人最多 ${maxBooks} 册|">每人最多 5 册</span></div>
+        <div class="detail-item"><span class="k">续借</span>
+          <span class="v" th:text="|最多 ${maxRenew} 次，每次延长 ${borrowDays} 天|">最多 1 次，每次延长 30 天</span></div>
+        <div class="detail-item"><span class="k">逾期罚金</span>
+          <span class="v" th:text="|${money.of(finePerDay)} 元 / 册 / 天|">0.00 元 / 册 / 天</span></div>
+        <div class="detail-item"><span class="k">怎么借书</span>
+          <span class="v">用借书卡号或手机号登录读者中心，自己借</span></div>
+        <div class="detail-item"><span class="k">怎么还书</span>
+          <span class="v">把书带到图书室前台，由管理员办理归还</span></div>
+      </div>
+      <div class="field-hint" style="margin-top:12px;">
+        请爱护图书，遗失或损坏需照价赔偿。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <a class="btn btn-primary" th:href="@{/login}">去登录 / 借书</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

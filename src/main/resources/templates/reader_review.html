@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: readerLayout(~{::#content}, 'my', '评价图书', ${isReader})}">
+<body>
+<div id="content">
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title" th:text="|给《${book.title}》打分|"></h2>
+      <div class="card-sub" th:text="${book.author == null ? '' : book.author}"></div>
+    </div>
+    <div class="card-body">
+      <div class="notice">你借过这本书，可以留下评价帮到其他读者。</div>
+      <form method="post" th:action="@{/reader/review/{id}(id=${book.id})}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+        <label class="field-label">打分</label>
+        <div class="filter-bar" style="gap:14px;">
+          <label class="text-muted" style="display:flex;align-items:center;gap:6px;"
+                 th:each="n : ${#numbers.sequence(5, 1, -1)}">
+            <input type="radio" name="rating" th:value="${n}"
+                   th:checked="${(mine != null and mine.rating == n) or (mine == null and n == 5)}">
+            <span style="color:#f59e0b;" th:text="${'★★★★★'.substring(0, n)}"></span>
+            <span th:text="|${n} 分|"></span>
+          </label>
+        </div>
+        <label class="field-label" for="content" style="margin-top:14px;">写点感受（可不填）</label>
+        <textarea class="textarea" id="content" name="content" maxlength="500"
+                  placeholder="这本书值不值得推荐？什么地方好？"
+                  th:text="${mine != null and mine.content != null ? mine.content : ''}"></textarea>
+        <div class="page-actions" style="margin-top:16px;">
+          <button class="btn btn-primary btn-lg" type="submit">保存评价</button>
+          <a class="btn btn-lg" th:href="@{/reader/my}">返回</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+</body>
+</html>

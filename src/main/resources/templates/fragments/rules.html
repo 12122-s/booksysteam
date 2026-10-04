@@ -1,0 +1,29 @@
+<!-- 借阅规则：读者端顶部和公告页共用这一块（对应 Python 版 _rules.html） -->
+<div th:fragment="rulesBox(announcement)" xmlns:th="http://www.thymeleaf.org">
+<details class="rules-box" open>
+  <summary>📖 借阅规则（点这里收起/展开）</summary>
+  <div class="rules-body">
+    <div th:if="${announcement != null and announcement != ''}"
+         style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;
+                padding:9px 12px;margin-bottom:10px;white-space:pre-line;">
+      📢 <b>公告：</b><span th:text="${announcement}"></span>
+    </div>
+    <div class="rules-grid">
+      <div class="rules-item"><span class="k">借期</span><span class="v"><span th:text="${conf['borrow_days']}">30</span> 天</span></div>
+      <div class="rules-item"><span class="k">可借册数</span>
+        <span class="v">每人最多 <span th:text="${conf['max_books_per_reader']}">5</span> 册</span></div>
+      <div class="rules-item"><span class="k">续借</span>
+        <span class="v">最多 <span th:text="${conf['max_renew_times']}">1</span> 次，每次延长 <span th:text="${conf['borrow_days']}">30</span> 天</span></div>
+      <div class="rules-item"><span class="k">逾期罚金</span>
+        <span class="v"><span th:text="${money.of(conf['fine_per_day'])}">0.50</span> 元 / 册 / 天</span></div>
+      <div class="rules-item"><span class="k">怎么借书</span>
+        <span class="v">用借书卡号或手机号登录读者中心，自己借</span></div>
+      <div class="rules-item"><span class="k">怎么还书</span>
+        <span class="v">把书带到图书室前台，由管理员办理归还</span></div>
+    </div>
+    <div class="field-hint" style="margin-top:8px;">
+      请爱护图书，遗失或损坏需照价赔偿。
+    </div>
+  </div>
+</details>
+</div>

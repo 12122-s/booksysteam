@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'logs', '操作日志')}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">操作日志</h1>
+      <p class="page-desc">
+        谁在什么时候做了什么，都记在这里（最近 300 条）。借书、还书、增删改图书读者、改设置、备份、导入都会留痕。
+      </p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" th:href="@{/settings}">← 系统设置</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form class="filter-bar" method="get" th:action="@{/logs}">
+        <input class="input grow" type="text" name="q" th:value="${q}" data-select-on-focus=""
+               placeholder="搜索动作、对象或人，例如：借书 / 三体 / 王小明" />
+        <select class="select" name="role">
+          <option value="">全部身份</option>
+          <option value="管理员" th:selected="${role == '管理员'}">管理员</option>
+          <option value="读者" th:selected="${role == '读者'}">读者</option>
+          <option value="系统" th:selected="${role == '系统'}">系统</option>
+        </select>
+        <button class="btn btn-primary" type="submit">搜索</button>
+        <a class="btn" th:if="${(q != null and q != '') or (role != null and role != '')}"
+           th:href="@{/logs}">清空条件</a>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body tight">
+      <div class="table-wrap" th:if="${!rows.isEmpty()}">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="nowrap">时间</th><th class="nowrap">谁</th>
+              <th class="nowrap">动作</th><th>对象</th><th>详情</th>
+              <th class="nowrap">来源 IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${rows}">
+              <td class="nowrap" th:text="${r.createdAt}"></td>
+              <td class="nowrap">
+                <span class="badge badge-info" th:if="${r.role == '管理员'}" th:text="${r.who}">谁</span>
+                <span class="badge badge-ok" th:if="${r.role == '读者'}" th:text="${r.who}">谁</span>
+                <span class="badge badge-muted" th:if="${r.role != '管理员' and r.role != '读者'}"
+                      th:text="${r.who}">谁</span>
+              </td>
+              <td class="nowrap text-bold" th:text="${r.action}"></td>
+              <td th:text="${r.target == null or r.target == '' ? '—' : r.target}">—</td>
+              <td class="text-muted" th:text="${r.detail == null ? '' : r.detail}"></td>
+              <td class="nowrap text-muted" th:text="${r.ip == null ? '' : r.ip}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${rows.isEmpty()}"><span class="empty-ico">📝</span>没有符合条件的日志</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

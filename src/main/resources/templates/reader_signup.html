@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: readerLayout(~{::#content}, 'signup', '网上办卡', false)}">
+<body>
+<div id="content">
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">网上办卡（新读者注册）</h2></div>
+    <div class="card-body">
+      <div class="notice">
+        填好下面几项就能办卡：系统会自动给你一个<b>借书卡号</b>，
+        以后用<b>卡号或手机号 + 密码</b>登录，就能自己借书了。
+      </div>
+      <form method="post" th:action="@{/reader/signup}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+        <div class="grid-form" style="grid-template-columns:1fr;">
+          <div>
+            <label class="field-label" for="name">姓名 <span class="text-danger">*</span></label>
+            <input class="input input-lg" id="name" name="name" required="required"
+                   th:value="${param.name != null ? param.name[0] : ''}" placeholder="请填写真实姓名">
+          </div>
+          <div>
+            <label class="field-label" for="phone">手机号 <span class="text-danger">*</span></label>
+            <input class="input input-lg" id="phone" name="phone" inputmode="tel" required="required"
+                   th:value="${param.phone != null ? param.phone[0] : ''}" placeholder="请输入手机号">
+            <div class="field-hint">用于登录和到期提醒，不会对外公开。</div>
+          </div>
+          <div>
+            <label class="field-label" for="reader_type">身份</label>
+            <select class="select" id="reader_type" name="reader_type">
+              <option value="学生" th:selected="${(param.reader_type != null ? param.reader_type[0] : '学生') == '学生'}">学生</option>
+              <option value="教师" th:selected="${(param.reader_type != null ? param.reader_type[0] : '学生') == '教师'}">教师</option>
+              <option value="职工" th:selected="${(param.reader_type != null ? param.reader_type[0] : '学生') == '职工'}">职工</option>
+              <option value="读者" th:selected="${(param.reader_type != null ? param.reader_type[0] : '学生') == '读者'}">其他读者</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="department">单位 / 班级（可不填）</label>
+            <input class="input" id="department" name="department"
+                   th:value="${param.department != null ? param.department[0] : ''}" placeholder="可不填">
+          </div>
+          <div>
+            <label class="field-label" for="email">电子邮箱（建议填）</label>
+            <input class="input" id="email" name="email" type="email"
+                   th:value="${param.email != null ? param.email[0] : ''}" placeholder="可不填">
+            <div class="field-hint">
+              填了以后：<b>忘记密码可以自己收验证码改密码</b>，不用再找管理员；到期提醒也能发到这里。
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="password">设置密码（至少 6 位）</label>
+            <input class="input input-lg" id="password" name="password" type="password" required="required">
+          </div>
+          <div>
+            <label class="field-label" for="confirm_password">再输一次密码</label>
+            <input class="input input-lg" id="confirm_password" name="confirm_password"
+                   type="password" required="required">
+          </div>
+          <div class="full">
+            <label class="text-muted" style="display:flex;align-items:flex-start;gap:8px;">
+              <input type="checkbox" name="agree" value="1" style="margin-top:4px;"
+                     th:checked="${param.agree != null}">
+              <span>我已阅读并同意图书室的借阅规则：
+                借期 <span th:text="${conf['borrow_days']}">30</span> 天，一次最多借
+                <span th:text="${conf['max_books_per_reader']}">5</span> 册，
+                逾期按 <span th:text="${conf['fine_per_day']}">0.5</span> 元 / 册 / 天计算罚金，图书损坏或丢失需照价赔偿。
+              </span>
+            </label>
+          </div>
+        </div>
+        <div class="page-actions" style="margin-top:16px;">
+          <button class="btn btn-primary btn-lg btn-block" type="submit">办好卡，开始借书</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      已经有借书卡了？<a th:href="@{/reader/login}">直接登录</a>
+      ·
+      <a th:href="@{/reader/register}">给已有卡号设密码</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

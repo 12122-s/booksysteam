@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: printLayout(~{::#content}, '书标打印')}">
+<body>
+<div id="content">
+<div class="print-head">
+  <div class="print-title" th:text="|${conf['library_name']} · 图书书标|">我的图书室 · 图书书标</div>
+  <div class="print-sub">
+    打印时间：<span th:text="${printedAt}">日期</span> ·
+    共 <span th:text="${#lists.size(books)}">0</span> 本<span
+      th:if="${keyword != null and !keyword.isEmpty()}"
+      th:text="|（筛选：${keyword}）|"></span>
+  </div>
+</div>
+
+<div class="label-grid">
+  <div class="label-card" th:each="b : ${books}">
+    <div class="label-title" th:text="${b.title}">书名</div>
+    <div class="label-line" th:text="${b.author}"></div>
+    <div class="label-line" th:text="|书架位置：${b.location == null or b.location == '' ? '—' : b.location}|">书架位置：—</div>
+    <div class="label-line" th:text="|书号：${b.isbn == null or b.isbn == '' ? '—' : b.isbn}|">书号：—</div>
+  </div>
+</div>
+
+<div class="print-note" th:if="${books.isEmpty()}">没有符合条件的图书。</div>
+</div>
+</body>
+</html>

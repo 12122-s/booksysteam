@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'reports', '统计报表')}">
+<body>
+<div id="content">
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">统计报表</h1>
+    <p class="page-desc">数据来自系统里的真实记录，打开就是最新数字。</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" th:href="@{/export/borrows.csv}">⬇ 导出借阅记录</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">藏书总册数</div>
+    <div class="stat-value"><span th:text="${totals['copies']}">0</span><small>册</small></div>
+  </div>
+  <div class="stat-card ok">
+    <div class="stat-label">在馆可借</div>
+    <div class="stat-value"><span th:text="${totals['available']}">0</span><small>册</small></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">已被借出</div>
+    <div class="stat-value"><span th:text="${totals['borrowed']}">0</span><small>册</small></div>
+  </div>
+  <div class="stat-card" th:classappend="${totals['overdue'] > 0} ? 'danger'">
+    <div class="stat-label">逾期未还</div>
+    <div class="stat-value"><span th:text="${totals['overdue']}">0</span><small>册</small></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">累计借阅次数</div>
+    <div class="stat-value"><span th:text="${totals['records']}">0</span><small>次</small></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">应收罚金（全部）</div>
+    <div class="stat-value"><span th:text="${money.of(totals['fine_total'])}">0.00</span><small>元</small></div>
+  </div>
+  <div class="stat-card ok">
+    <div class="stat-label">已收罚金</div>
+    <div class="stat-value"><span th:text="${money.of(totals['fine_paid'])}">0.00</span><small>元</small></div>
+  </div>
+  <div class="stat-card" th:classappend="${totals['fine_unpaid'] > 0} ? 'danger'">
+    <div class="stat-label">未收罚金</div>
+    <div class="stat-value"><span th:text="${money.of(totals['fine_unpaid'])}">0.00</span><small>元</small></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">📈 最近 6 个月借出情况</h2>
+    <div class="card-sub">按借出日期统计</div>
+  </div>
+  <div class="card-body">
+    <div class="month-chart">
+      <div class="month-col" th:each="m : ${monthly}">
+        <div class="month-num" th:text="${m.value}">0</div>
+        <div class="month-bar" th:style="|height: ${m.percent}%;|"></div>
+        <div class="month-label" th:text="${m.label}">月</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">📚 分类分布</h2>
+      <div class="card-sub" th:text="|共 ${#lists.size(catRows)} 个分类|">共 0 个分类</div>
+    </div>
+    <div class="card-body">
+      <th:block th:if="${!catRows.isEmpty()}">
+        <div class="bar-row" th:each="c : ${catRows}">
+          <div class="bar-label" th:text="${c.category}">分类</div>
+          <div class="bar-track">
+            <div class="bar-fill" th:style="|width: ${c.percent}%|"></div>
+          </div>
+          <div class="bar-value" th:text="|${c.copies} 册|">0 册</div>
+        </div>
+        <div class="field-hint">每行代表一个分类，"册"是该分类的藏书总册数。</div>
+      </th:block>
+      <div class="empty" th:if="${catRows.isEmpty()}">还没有图书数据</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">🔥 借阅排行榜（图书）</h2>
+      <div class="card-sub">被借次数最多的前 10 本</div>
+    </div>
+    <div class="card-body">
+      <ul class="rank-list" th:if="${!hotBooks.isEmpty()}">
+        <li th:each="b, st : ${hotBooks}">
+          <div class="rank-no" th:text="${st.count}">1</div>
+          <div class="rank-main">
+            <div class="rank-title" th:text="${b.name}">书名</div>
+            <div class="rank-sub" th:text="${b.sub == null or b.sub == '' ? '作者未填' : b.sub}">作者未填</div>
+          </div>
+          <div class="rank-times" th:text="|${b.times} 次|">0 次</div>
+        </li>
+      </ul>
+      <div class="empty" th:if="${hotBooks.isEmpty()}">还没有借阅记录</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">🏅 借书最多的读者</h2>
+    <div class="card-sub" th:text="|共 ${totals['readers']} 位读者|">共 0 位读者</div>
+  </div>
+  <div class="card-body tight">
+    <div class="table-wrap" th:if="${!hotReaders.isEmpty()}">
+      <table class="table">
+        <thead><tr><th class="nowrap">名次</th><th>读者</th><th>卡号 / 单位 / 班级</th><th class="nowrap">借阅次数</th></tr></thead>
+        <tbody>
+          <tr th:each="r, st : ${hotReaders}">
+            <td class="nowrap"><span class="rank-no" th:text="${st.count}">1</span></td>
+            <td class="cell-main" th:text="${r.name}">读者</td>
+            <td th:text="${r.sub == null or r.sub == '' ? '—' : r.sub}">—</td>
+            <td class="nowrap text-bold" th:text="|${r.times} 次|">0 次</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${hotReaders.isEmpty()}">还没有借阅记录</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

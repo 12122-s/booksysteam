@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'readers', '读者管理')}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">读者管理</h1>
+      <p class="page-desc" th:text="|共 ${total} 位读者。可以搜姓名、卡号、电话或班级。|">共 0 位读者。</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-primary" th:href="@{/readers/new}">＋ 新增读者</a>
+      <a class="btn" th:href="@{/export/readers.csv}">⬇ 导出读者清单</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form class="filter-bar" method="get" th:action="@{/readers}">
+        <input class="input grow" type="text" name="q" th:value="${q}" data-select-on-focus=""
+               placeholder="搜索姓名 / 卡号 / 电话 / 班级"/>
+        <select class="select" name="type">
+          <option value="">全部类型</option>
+          <option th:each="t : ${types}" th:value="${t}"
+                  th:selected="${t == rtype}" th:text="${t}"></option>
+        </select>
+        <button class="btn btn-primary" type="submit">搜索</button>
+        <a class="btn" th:if="${(q != null and q != '') or (rtype != null and rtype != '')}"
+           th:href="@{/readers}">清空条件</a>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body tight">
+      <div class="table-wrap" th:if="${!readers.isEmpty()}">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>姓名 / 卡号</th><th>类型</th><th>单位 / 班级</th><th class="nowrap">联系电话</th>
+              <th class="nowrap">当前在借</th><th class="nowrap">网上账号</th><th class="nowrap">状态</th>
+              <th class="nowrap">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${readers}"
+                th:classappend="${r.overdueCount != null and r.overdueCount > 0} ? 'row-overdue'">
+              <td>
+                <div class="cell-main" th:text="${r.name}">姓名</div>
+                <div class="cell-sub"
+                     th:text="${r.gender != null and r.gender != '' ? r.cardNo + ' · ' + r.gender : r.cardNo}">卡号</div>
+                <span class="badge badge-info" style="margin-top:3px;"
+                      th:if="${r.source == '自助注册'}">网上办卡</span>
+              </td>
+              <td>
+                <span class="badge badge-info" th:if="${r.readerType != null and r.readerType != ''}"
+                      th:text="${r.readerType}">类型</span>
+                <th:block th:if="${r.readerType == null or r.readerType == ''}">—</th:block>
+              </td>
+              <td th:text="${r.department == null or r.department == '' ? '—' : r.department}">—</td>
+              <td class="nowrap" th:text="${r.phone == null or r.phone == '' ? '—' : r.phone}">—</td>
+              <td class="nowrap">
+                <th:block th:if="${r.borrowing != null and r.borrowing > 0}">
+                  <span class="badge badge-muted" th:text="|${r.borrowing} 册|">0 册</span>
+                  <div class="cell-sub text-danger" th:if="${r.overdueCount != null and r.overdueCount > 0}"
+                       th:text="|逾期 ${r.overdueCount} 册|">逾期 0 册</div>
+                </th:block>
+                <span class="text-muted" th:unless="${r.borrowing != null and r.borrowing > 0}">没有</span>
+              </td>
+              <td class="nowrap">
+                <span class="badge badge-ok"
+                      th:if="${r.passwordHash != null and r.passwordHash != ''}">已开通</span>
+                <th:block th:if="${r.passwordHash == null or r.passwordHash == ''}">
+                  <span class="badge badge-muted">没开通</span>
+                  <div class="cell-sub">读者还没注册</div>
+                </th:block>
+              </td>
+              <td class="nowrap">
+                <span class="badge badge-ok" th:if="${r.status == '正常'}">正常</span>
+                <span class="badge badge-warn" th:if="${r.status == '待审核'}">待审核</span>
+                <span class="badge badge-danger"
+                      th:if="${r.status != '正常' and r.status != '待审核'}" th:text="${r.status}">状态</span>
+              </td>
+              <td class="nowrap">
+                <div class="actions">
+                  <form class="inline-form" method="post" th:if="${r.status == '待审核'}"
+                        th:action="@{/readers/{id}/approve(id=${r.id})}"
+                        data-confirm-title="通过办卡申请"
+                        data-confirm-ok="通过审核"
+                        th:data-confirm="|${r.name}（卡号 ${r.cardNo}）
+通过后他/她就能借书了。|">
+                    <input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
+                    <button class="btn btn-sm btn-ok" type="submit">通过审核</button>
+                  </form>
+                  <a class="btn btn-sm" th:href="@{/readers/{id}/history(id=${r.id})}">历史</a>
+                  <a class="btn btn-sm" th:href="@{/readers/{id}/edit(id=${r.id})}">编辑</a>
+                  <form class="inline-form" method="post"
+                        th:action="@{/readers/{id}/reset-password(id=${r.id})}"
+                        data-confirm-title="重置读者密码"
+                        data-confirm-ok="确认重置"
+                        th:data-confirm="|${r.name} 的网上账号密码会变成 123456，
+请转告他/她登录后自行修改。|">
+                    <input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
+                    <button class="btn btn-sm" type="submit">重置密码</button>
+                  </form>
+                  <form class="inline-form" method="post" th:action="@{/readers/{id}/delete(id=${r.id})}"
+                        data-confirm-title="确认删除这位读者"
+                        data-confirm-ok="确认删除"
+                        data-confirm-danger=""
+                        th:data-confirm="|${r.name}（卡号 ${r.cardNo}）
+删除后读者列表里就没有他/她了（借阅历史会保留）。|">
+                    <input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
+                    <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${readers.isEmpty()}">
+        <span class="empty-ico">🔍</span>
+        <th:block th:if="${(q != null and q != '') or (rtype != null and rtype != '')}">没有找到符合条件的读者。</th:block>
+        <th:block th:if="${(q == null or q == '') and (rtype == null or rtype == '')}">还没有读者，点右上角「新增读者」开始登记。</th:block>
+      </div>
+    </div>
+    <div th:replace="~{fragments/layout :: pagination(${page}, ${pages}, ${total})}"></div>
+  </div>
+
+</div>
+</body>
+</html>

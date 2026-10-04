@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: readerLayout(~{::#content}, 'register', '设置网上密码', false)}">
+<body>
+<div id="content">
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">给已有卡号设置网上密码</h2></div>
+    <div class="card-body">
+      <div class="notice">
+        这一步用于<b>已经有借书卡</b>的读者（卡是图书室给的）。
+        如果你还没有卡，请点下面的「我要办卡」，直接在网上办一张。
+      </div>
+      <div class="notice warn">
+        <b>手机号要填图书室登记的那个。</b>它是用来核对身份的——卡号印在卡上，谁捡到都能看到，
+        所以要多核对一项，防止别人冒用你的卡号登录。<br>
+        如果换了手机号、或者不记得当初留的是哪个号码：<b>找图书室管理员帮你更新号码</b>，
+        或者让管理员直接帮你重置密码（重置后用 123456 登录，再自己改）。
+      </div>
+      <form method="post" th:action="@{/reader/register}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+        <div class="grid-form" style="grid-template-columns:1fr;">
+          <div>
+            <label class="field-label" for="card_no">借书卡号 <span class="text-danger">*</span></label>
+            <input class="input input-lg" id="card_no" name="card_no" required="required"
+                   th:value="${param.card_no != null ? param.card_no[0] : ''}" placeholder="请输入借书卡号">
+          </div>
+          <div>
+            <label class="field-label" for="name">姓名 <span class="text-danger">*</span></label>
+            <input class="input input-lg" id="name" name="name" required="required"
+                   th:value="${param.name != null ? param.name[0] : ''}" placeholder="要和图书室登记的一致">
+          </div>
+          <div>
+            <label class="field-label" for="phone">手机号 <span class="text-danger">*</span></label>
+            <input class="input input-lg" id="phone" name="phone" inputmode="tel" required="required"
+                   th:value="${param.phone != null ? param.phone[0] : ''}" placeholder="用于联系和到期提醒">
+          </div>
+          <div>
+            <label class="field-label" for="password">设置密码（至少 6 位）</label>
+            <input class="input input-lg" id="password" name="password" type="password" required="required">
+          </div>
+          <div>
+            <label class="field-label" for="confirm_password">再输一次密码</label>
+            <input class="input input-lg" id="confirm_password" name="confirm_password"
+                   type="password" required="required">
+          </div>
+        </div>
+        <div class="page-actions" style="margin-top:16px;">
+          <button class="btn btn-primary btn-lg btn-block" type="submit">注册并开始借书</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      已经有账号了？<a th:href="@{/reader/login}">直接登录</a>
+      ·
+      还没有借书卡？<a th:href="@{/reader/signup}">我要办卡</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

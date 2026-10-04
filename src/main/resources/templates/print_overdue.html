@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: printLayout(~{::#content}, '催还单')}">
+<body>
+<div id="content">
+<div class="print-head">
+  <div class="print-title" th:text="|${conf['library_name']} · 逾期催还单|">我的图书室 · 逾期催还单</div>
+  <div class="print-sub"
+       th:text="|打印时间：${printedAt} · 共 ${#lists.size(records)} 册 · 合计罚金约 ${totalFine} 元|">打印时间：</div>
+</div>
+
+<th:block th:if="${!records.isEmpty()}">
+<table class="print-table">
+  <thead>
+    <tr><th>读者</th><th>联系电话</th><th>书名</th>
+        <th>应还日期</th><th>已逾期</th><th>罚金(元)</th></tr>
+  </thead>
+  <tbody>
+    <tr th:each="r : ${records}">
+      <td th:text="${r.readerName}">读者</td>
+      <td th:text="${r.phone == null or r.phone == '' ? '—' : r.phone}">—</td>
+      <td th:text="${r.bookTitle}">书名</td>
+      <td th:text="${r.dueDate}">日期</td>
+      <td th:text="|${r.overdueDays} 天|">0 天</td>
+      <td th:text="${money.of(r.fine)}">0.00</td>
+    </tr>
+  </tbody>
+</table>
+<div class="print-note">
+  请按上面的电话联系读者催还。联系电话为空时，可通过班级或单位联系。
+</div>
+</th:block>
+<div class="print-note" th:if="${records.isEmpty()}">目前没有逾期未还的书。</div>
+</div>
+</body>
+</html>

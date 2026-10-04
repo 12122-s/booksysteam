@@ -1,0 +1,37 @@
+server:
+  port: 8080
+  # 出错时显示自定义错误页而不是 Whitelabel
+  error:
+    whitelabel:
+      enabled: false
+
+spring:
+  application:
+    name: library-system
+  # 数据库连接：默认本机 MySQL，可用环境变量 LIB_DB_* 覆盖（与 Python 版同名，方便迁移）
+  datasource:
+    url: jdbc:mysql://${LIB_DB_HOST:127.0.0.1}:${LIB_DB_PORT:3306}/${LIB_DB_NAME:library_system}?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&connectTimeout=8000
+    username: ${LIB_DB_USER:root}
+    password: ${LIB_DB_PASSWORD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  thymeleaf:
+    # 开发阶段改模板即时生效；部署到生产可改为 true 提升性能
+    cache: false
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
+
+# 业务目录配置（封面/收款码上传、自动备份都放在项目目录下）
+library:
+  uploads-dir: ${user.dir}/uploads
+  backup-dir: ${user.dir}/backups
+
+logging:
+  level:
+    com.library: info

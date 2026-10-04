@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'borrows', '借阅记录')}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">借阅记录</h1>
+      <p class="page-desc">所有借书、还书、续借都会在这里留下记录，逾期由系统自动判断。</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-primary" th:href="@{/borrow/new}">📕 办理借书</a>
+      <a class="btn" th:href="@{/export/borrows.csv}">⬇ 导出借阅记录</a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <a class="tab" th:classappend="${status == ''} ? 'active'" th:href="@{/borrows}">
+      全部 <span class="count" th:text="${countAll}">0</span></a>
+    <a class="tab" th:classappend="${status == 'borrowing'} ? 'active'" th:href="@{/borrows(status='borrowing')}">
+      借出中 <span class="count" th:text="${countBorrowing}">0</span></a>
+    <a class="tab" th:classappend="${status == 'overdue'} ? 'active'" th:href="@{/borrows(status='overdue')}">
+      已逾期 <span class="count" th:text="${countOverdue}">0</span></a>
+    <a class="tab" th:classappend="${status == 'returned'} ? 'active'" th:href="@{/borrows(status='returned')}">
+      已归还 <span class="count" th:text="${countReturned}">0</span></a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form class="filter-bar" method="get" th:action="@{/borrows}">
+        <input type="hidden" name="status" th:value="${status}" th:if="${status != null and status != ''}" />
+        <input class="input grow" type="text" name="q" th:value="${q}" data-select-on-focus=""
+               placeholder="搜索书名 / 读者姓名 / 卡号 / ISBN" />
+        <button class="btn btn-primary" type="submit">搜索</button>
+        <a class="btn" th:if="${q != null and q != ''}"
+           th:href="@{/borrows(status=${status != null and status != '' ? status : null})}">清空关键词</a>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body tight">
+      <div class="table-wrap" th:if="${!records.isEmpty()}">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>读者</th><th>书名</th><th class="nowrap">借出日期</th>
+              <th class="nowrap">应还日期</th><th class="nowrap">归还日期</th>
+              <th class="nowrap">状态</th><th class="nowrap">罚金</th><th class="nowrap">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${records}" th:classappend="${r.status == '已逾期'} ? 'row-overdue'">
+              <td>
+                <div class="cell-main" th:text="${r.readerName}">读者</div>
+                <div class="cell-sub"
+                     th:text="${r.cardNo + (r.phone != null and r.phone != '' ? ' · ' + r.phone : '')}">卡号</div>
+                <span class="badge badge-info" style="margin-top:3px;"
+                      th:if="${r.source == '读者自助'}">读者自己借的</span>
+              </td>
+              <td>
+                <div th:text="${r.bookTitle}">书名</div>
+                <div class="cell-sub"
+                     th:text="${(r.bookAuthor == null ? '' : r.bookAuthor) + (r.renewCount != null and r.renewCount > 0 ? ' · 已续借 ' + r.renewCount + ' 次' : '')}"></div>
+              </td>
+              <td class="nowrap" th:text="${r.borrowDate}"></td>
+              <td class="nowrap" th:text="${r.dueDate}"></td>
+              <td class="nowrap" th:text="${r.returnDate == null or r.returnDate == '' ? '—' : r.returnDate}">—</td>
+              <td class="nowrap">
+                <th:block th:if="${r.status == '已归还'}">
+                  <span class="badge badge-muted">已归还</span>
+                  <div class="cell-sub text-warn" th:if="${r.overdueDays != null and r.overdueDays > 0}"
+                       th:text="|逾期 ${r.overdueDays} 天|">逾期 0 天</div>
+                </th:block>
+                <span class="badge badge-danger" th:if="${r.status == '已逾期'}"
+                      th:text="|逾期 ${r.overdueDays} 天|">逾期 0 天</span>
+                <th:block th:if="${r.status != '已归还' and r.status != '已逾期'}">
+                  <span class="badge badge-info">借出中</span>
+                  <div class="cell-sub text-warn" th:if="${r.daysLeft != null and !(r.daysLeft > 3)}"
+                       th:text="|还剩 ${r.daysLeft} 天|">还剩 0 天</div>
+                </th:block>
+              </td>
+              <td class="nowrap">
+                <span class="text-danger text-bold" th:if="${r.fine != null and r.fine > 0}"
+                      th:text="${money.of(r.fine)}">0.00</span>
+                <span class="text-muted" th:if="${r.fine == null or !(r.fine > 0)}">0.00</span>
+              </td>
+              <td class="nowrap">
+                <th:block th:if="${r.status != '已归还'}">
+                  <div class="actions">
+                    <form class="inline-form" method="post" th:action="@{/borrows/{id}/return(id=${r.id})}"
+                          data-confirm-title="确认办理还书"
+                          data-confirm-ok="确认还书"
+                          th:data-confirm="|《${r.bookTitle}》— ${r.readerName}
+${r.overdueDays != null and r.overdueDays > 0 ? '已逾期 ' + r.overdueDays + ' 天，应收罚金 ' + money.of(r.fine) + ' 元。' : '按时归还，不收罚金。'}|">
+                      <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                      <input type="hidden" name="next"
+                             th:value="@{/borrows(status=${status != null and status != '' ? status : null}, q=${q != null and q != '' ? q : null}, page=${page})}" />
+                      <button class="btn btn-sm btn-ok" type="submit">还书</button>
+                    </form>
+                    <form class="inline-form" method="post" th:action="@{/borrows/{id}/renew(id=${r.id})}"
+                          data-confirm-title="确认续借"
+                          data-confirm-ok="确认续借"
+                          data-confirm-input="续借天数"
+                          data-confirm-input-name="days"
+                          th:data-confirm-input-value="${conf['borrow_days']}"
+                          th:data-confirm="|《${r.bookTitle}》— ${r.readerName}
+当前应还日期：${r.dueDate}。填好天数后会从这一天往后延。|">
+                      <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                      <input type="hidden" name="next"
+                             th:value="@{/borrows(status=${status != null and status != '' ? status : null}, q=${q != null and q != '' ? q : null}, page=${page})}" />
+                      <button class="btn btn-sm" type="submit">续借</button>
+                    </form>
+                    <a class="btn btn-sm" th:href="@{/print/receipt/{id}(id=${r.id})}"
+                       target="_blank">打印单</a>
+                  </div>
+                </th:block>
+                <span class="text-muted" th:if="${r.status == '已归还'}">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${records.isEmpty()}"><span class="empty-ico">📭</span>没有符合条件的借阅记录</div>
+    </div>
+    <div th:replace="~{fragments/layout :: pagination(${page}, ${pages}, ${total})}"></div>
+  </div>
+
+</div>
+</body>
+</html>

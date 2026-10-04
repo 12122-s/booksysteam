@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: readerLayout(~{::#content}, 'profile', '我的资料', ${isReader})}">
+<body>
+<div id="content">
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">我的资料</h2></div>
+    <div class="card-body">
+      <div class="detail-list" style="grid-template-columns:1fr;">
+        <div class="detail-item"><span class="k">姓名</span><span class="v" th:text="${reader.name}"></span></div>
+        <div class="detail-item"><span class="k">借书卡号</span><span class="v" th:text="${reader.cardNo}"></span></div>
+        <div class="detail-item"><span class="k">类型</span>
+          <span class="v" th:text="${reader.readerType == null or reader.readerType == '' ? '—' : reader.readerType}"></span></div>
+        <div class="detail-item"><span class="k">单位/班级</span>
+          <span class="v" th:text="${reader.department == null or reader.department == '' ? '—' : reader.department}"></span></div>
+        <div class="detail-item"><span class="k">手机号</span>
+          <span class="v" th:text="${reader.phone == null or reader.phone == '' ? '—' : reader.phone}"></span></div>
+        <div class="detail-item"><span class="k">当前在借</span>
+          <span class="v" th:text="|${borrowing} / ${maxBooks} 册|"></span></div>
+        <div class="detail-item"><span class="k">累计借阅</span>
+          <span class="v" th:text="|${total} 次|"></span></div>
+      </div>
+      <div class="field-hint" style="margin-top:10px;">
+        姓名、卡号等信息如果不对，请找图书室管理员修改；改密码在下面自己操作即可。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">接收验证码的邮箱</h2></div>
+    <div class="card-body">
+      <p class="page-desc" style="margin-top:0;" th:if="${webEmailOn}">
+        填上你的邮箱，<b>忘记密码时验证码会直接发到邮箱</b>，自己就能改密码，不用找管理员。
+      </p>
+      <p class="page-desc" style="margin-top:0;" th:if="${!webEmailOn}">
+        图书室目前没有开通邮箱发验证码。忘记密码时，请找管理员核对身份后获取验证码。
+      </p>
+      <form method="post" th:action="@{/reader/email}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+        <div class="filter-bar">
+          <input class="input grow" type="email" name="email"
+                 th:value="${reader.email == null ? '' : reader.email}"
+                 placeholder="请输入邮箱">
+          <button class="btn btn-primary" type="submit">保存邮箱</button>
+        </div>
+        <div class="field-hint" style="margin-top:8px;">
+          当前邮箱：<b th:text="${reader.email == null or reader.email == '' ? '还没有填' : reader.email}"></b>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">修改密码</h2></div>
+    <div class="card-body">
+      <form method="post" th:action="@{/reader/password}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+        <div class="grid-form" style="grid-template-columns:1fr;">
+          <div>
+            <label class="field-label" for="current_password">当前密码</label>
+            <input class="input" id="current_password" name="current_password" type="password" required>
+          </div>
+          <div>
+            <label class="field-label" for="new_password">新密码（至少 6 位）</label>
+            <input class="input" id="new_password" name="new_password" type="password" required>
+          </div>
+          <div>
+            <label class="field-label" for="confirm_password">再输一次新密码</label>
+            <input class="input" id="confirm_password" name="confirm_password" type="password" required>
+          </div>
+        </div>
+        <div class="page-actions" style="margin-top:16px;">
+          <button class="btn btn-primary" type="submit">修改密码</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

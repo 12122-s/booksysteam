@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'books', ${book.title + ' · 借阅历史'})}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title" th:text="|《${book.title}》的借阅历史|">借阅历史</h1>
+      <p class="page-desc"
+         th:text="|${book.author == null or book.author == '' ? '作者未填' : book.author} · 共 ${book.totalCopies} 册，现在可借 ${book.availableCopies} 册${book.location != null and book.location != '' ? ' · 位置 ' + book.location : ''}|">共 0 册</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" th:href="@{/books}">← 返回图书列表</a>
+      <a class="btn" th:href="@{/books/{id}/edit(id=${book.id})}">编辑这本书</a>
+    </div>
+  </div>
+
+  <div class="notice" th:if="${book.summary != null and book.summary != ''}"
+       th:text="|📖 ${book.summary}|">📖</div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title" th:text="|借阅记录（${#lists.size(records)} 条）|">借阅记录</h2>
+    </div>
+    <div class="card-body tight">
+      <div class="table-wrap" th:if="${!records.isEmpty()}">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>读者</th><th>借书卡号</th><th class="nowrap">借出日期</th>
+              <th class="nowrap">应还日期</th><th class="nowrap">归还日期</th>
+              <th class="nowrap">续借</th><th class="nowrap">状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${records}" th:classappend="${r.status == '已逾期'} ? 'row-overdue'">
+              <td class="cell-main" th:text="${r.readerName}">读者</td>
+              <td th:text="${r.cardNo}">卡号</td>
+              <td class="nowrap" th:text="${r.borrowDate}"></td>
+              <td class="nowrap" th:text="${r.dueDate}"></td>
+              <td class="nowrap" th:text="${r.returnDate == null or r.returnDate == '' ? '—' : r.returnDate}">—</td>
+              <td class="nowrap" th:text="|${r.renewCount} 次|">0 次</td>
+              <td class="nowrap">
+                <th:block th:if="${r.status == '已归还'}">
+                  <span class="badge badge-muted">已归还</span>
+                  <div class="cell-sub text-warn" th:if="${r.overdueDays != null and r.overdueDays != 0}"
+                       th:text="|逾期 ${r.overdueDays} 天|">逾期 0 天</div>
+                </th:block>
+                <span class="badge badge-danger" th:if="${r.status == '已逾期'}"
+                      th:text="|逾期 ${r.overdueDays} 天|">逾期 0 天</span>
+                <span class="badge badge-info"
+                      th:if="${r.status != '已归还' and r.status != '已逾期'}">借出中</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${records.isEmpty()}"><span class="empty-ico">📭</span>这本书还没有被借过</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

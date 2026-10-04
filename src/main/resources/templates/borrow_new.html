@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'borrow_new', '办理借书')}">
+<body>
+<div id="content">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">办理借书</h1>
+      <p class="page-desc" th:text="|第一步选读者，第二步选图书，第三步确认借出。默认借期 ${borrowDays} 天。|">第一步选读者。</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" th:href="@{/borrows}">查看借阅记录</a>
+    </div>
+  </div>
+
+  <div class="pick-grid">
+    <!-- 第一步：选读者 -->
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">第 1 步：选择读者</h2>
+        <span class="badge badge-ok" th:if="${selectedReader != null}">已选择</span>
+      </div>
+      <form method="get" th:action="@{/borrow/new}">
+        <input type="hidden" name="bq" th:value="${bq}" />
+        <input type="hidden" name="book_id" th:value="${selectedBook.id}" th:if="${selectedBook != null}" />
+        <input type="hidden" name="reader_id" th:value="${selectedReader.id}" th:if="${selectedReader != null}" />
+        <div class="card-body">
+          <div class="filter-bar">
+            <input class="input grow" type="text" name="rq" th:value="${rq}"
+                   placeholder="输入姓名、卡号或班级" />
+            <button class="btn btn-primary" type="submit">搜索读者</button>
+          </div>
+        </div>
+        <div class="pick-list">
+          <div class="pick-item" th:each="r : ${readers}"
+               th:classappend="${selectedReader != null and selectedReader.id == r.id} ? 'picked'">
+            <div class="info">
+              <div class="name">
+                <span th:text="${r.name}">姓名</span>
+                <span class="badge badge-danger" th:if="${r.status != '正常'}" th:text="${r.status}">状态</span>
+              </div>
+              <div class="cell-sub"
+                   th:text="|卡号 ${r.cardNo}${r.department != null and r.department != '' ? ' · ' + r.department : ''} · 在借 ${r.borrowing} 册|">卡号</div>
+            </div>
+            <button class="btn btn-sm"
+                    th:classappend="${selectedReader != null and selectedReader.id == r.id} ? 'btn-primary'"
+                    type="submit" name="pick_reader" th:value="${r.id}"
+                    th:disabled="${r.status != '正常'}"
+                    th:text="${selectedReader != null and selectedReader.id == r.id ? '已选择' : '选他/她'}">选他/她</button>
+          </div>
+          <div class="empty" th:if="${readers.isEmpty()}">没有找到读者，换个关键词试试，或先去「读者管理」新增。</div>
+        </div>
+      </form>
+    </div>
+
+    <!-- 第二步：选图书 -->
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">第 2 步：选择图书</h2>
+        <span class="badge badge-ok" th:if="${selectedBook != null}">已选择</span>
+      </div>
+      <form method="get" th:action="@{/borrow/new}">
+        <input type="hidden" name="rq" th:value="${rq}" />
+        <input type="hidden" name="reader_id" th:value="${selectedReader.id}" th:if="${selectedReader != null}" />
+        <input type="hidden" name="book_id" th:value="${selectedBook.id}" th:if="${selectedBook != null}" />
+        <div class="card-body">
+          <div class="filter-bar">
+            <input class="input grow" type="text" name="bq" th:value="${bq}"
+                   placeholder="输入书名、作者或书号" />
+            <button class="btn btn-primary" type="submit">搜索图书</button>
+          </div>
+        </div>
+        <div class="pick-list">
+          <div class="pick-item" th:each="b : ${books}"
+               th:classappend="${selectedBook != null and selectedBook.id == b.id} ? 'picked'">
+            <div class="info">
+              <div class="name" th:text="${b.title}">书名</div>
+              <div class="cell-sub"
+                   th:text="|${b.author == null or b.author == '' ? '作者未填' : b.author} · 可借 ${b.availableCopies} / ${b.totalCopies} 册${b.location != null and b.location != '' ? ' · ' + b.location : ''}|">作者未填</div>
+            </div>
+            <button class="btn btn-sm"
+                    th:classappend="${selectedBook != null and selectedBook.id == b.id} ? 'btn-primary'"
+                    type="submit" name="pick_book" th:value="${b.id}"
+                    th:disabled="${b.availableCopies == null or !(b.availableCopies > 0)}"
+                    th:text="${b.availableCopies == null or !(b.availableCopies > 0) ? '已借完' : (selectedBook != null and selectedBook.id == b.id ? '已选择' : '选这本')}">选这本</button>
+          </div>
+          <div class="empty" th:if="${books.isEmpty()}">没有找到图书，换个关键词试试，或先去「图书管理」新增。</div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 第三步：确认借出 -->
+  <form method="post" th:action="@{/borrow/new}">
+    <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+    <input type="hidden" name="reader_id" th:value="${selectedReader != null ? selectedReader.id : ''}" />
+    <input type="hidden" name="book_id" th:value="${selectedBook != null ? selectedBook.id : ''}" />
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">第 3 步：确认借出</h2></div>
+      <div class="card-body">
+        <div class="notice danger" th:if="${selectedReader != null and selectedReader.status != '正常'}"
+             th:text="|这位读者状态为「${selectedReader.status}」，不能借书。请先到读者管理把状态改为正常。|"></div>
+        <div class="notice warn"
+             th:if="${selectedReader != null and readerOverdue > 0 and selectedReader.status == '正常'}"
+             th:text="|注意：这位读者目前有 ${readerOverdue} 册书已经逾期，建议先催还再借新书。|"></div>
+        <div class="notice danger"
+             th:if="${selectedBook != null and selectedBook.availableCopies != null and !(selectedBook.availableCopies > 0)}"
+             th:text="|《${selectedBook.title}》现在可借册数为 0，不能借出。|"></div>
+
+        <div class="summary-box">
+          <div class="summary-item">
+            <div class="label">读者</div>
+            <div class="value">
+              <th:block th:if="${selectedReader != null}"
+                        th:text="|${selectedReader.name}（${selectedReader.cardNo}）|"></th:block>
+              <span class="text-muted" th:if="${selectedReader == null}">还没有选择</span>
+            </div>
+          </div>
+          <div class="summary-item">
+            <div class="label">图书</div>
+            <div class="value">
+              <th:block th:if="${selectedBook != null}">
+                《<span th:text="${selectedBook.title}">书名</span>》
+                <span class="text-muted" th:text="|（可借 ${selectedBook.availableCopies} 册）|">（可借 0 册）</span>
+              </th:block>
+              <span class="text-muted" th:if="${selectedBook == null}">还没有选择</span>
+            </div>
+          </div>
+          <div class="summary-item">
+            <div class="label">借出日期</div>
+            <div class="value" th:text="|${#temporals.format(today, 'yyyy-MM-dd')}（今天）|">（今天）</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">应还日期</div>
+            <div class="value">
+              <input class="input" type="date" name="due_date" th:value="${defaultDue}" style="max-width:190px;" />
+            </div>
+          </div>
+          <div class="summary-item" style="grid-column:1/-1;">
+            <div class="label">备注（可不填）</div>
+            <input class="input" type="text" name="remark" placeholder="例如：读者要求保留一周" />
+          </div>
+        </div>
+
+        <div class="page-actions" style="margin-top:16px;">
+          <button class="btn btn-primary btn-lg" type="submit"
+                  th:disabled="${selectedReader == null or selectedBook == null or selectedBook.availableCopies == null or !(selectedBook.availableCopies > 0) or selectedReader.status != '正常'}">
+            ✅ 确认借出
+          </button>
+          <a class="btn btn-lg" th:href="@{/borrow/new}">重新选择</a>
+          <span class="field-hint" style="align-self:center;">
+            借出后，这本书的"可借册数"会自动减 1。
+          </span>
+        </div>
+      </div>
+    </div>
+  </form>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'reviews', '书评管理')}">
+<body>
+<div id="content">
+<div class="page-head">
+  <div>
+    <h1 class="page-title">书评管理</h1>
+    <p class="page-desc">读者给借过的书打的评分和评论。不合适的内容可以隐藏或删除。</p>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    <form class="filter-bar" method="get" th:action="@{/reviews}">
+      <input class="input grow" type="text" name="q" th:value="${q}" data-select-on-focus=""
+             placeholder="搜索书名、读者或评论内容" />
+      <button class="btn btn-primary" type="submit">搜索</button>
+      <a class="btn" th:if="${q != null and q != ''}" th:href="@{/reviews}">清空</a>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap" th:if="${!rows.isEmpty()}">
+      <table class="table">
+        <thead><tr><th>书名</th><th>读者</th><th class="nowrap">评分</th>
+          <th>评论</th><th class="nowrap">时间</th><th class="nowrap">操作</th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${rows}" th:classappend="${r.hidden != null and r.hidden == 1} ? 'row-overdue'">
+            <td class="cell-main" th:text="${r.bookTitle}">书名</td>
+            <td>
+              <span th:text="${r.readerName}">读者</span>
+              <div class="cell-sub" th:text="${r.cardNo}">卡号</div>
+            </td>
+            <td class="nowrap"><span style="color:#f59e0b;"
+                  th:text="${'★★★★★'.substring(0, r.rating)}">★★★★★</span></td>
+            <td>
+              <span th:text="${r.content == null or r.content == '' ? '（只打了分）' : r.content}">评论</span>
+              <span class="badge badge-muted" th:if="${r.hidden != null and r.hidden == 1}">已隐藏</span>
+            </td>
+            <td class="nowrap" th:text="${r.createdAt}"></td>
+            <td class="nowrap">
+              <div class="actions">
+                <th:block th:if="${r.hidden != null and r.hidden == 1}">
+                  <form class="inline-form" method="post"
+                        th:action="@{/reviews/{id}/{a}(id=${r.id}, a='show')}">
+                    <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                    <input type="hidden" name="back_q" th:value="${q}" />
+                    <button class="btn btn-sm" type="submit">恢复显示</button>
+                  </form>
+                </th:block>
+                <th:block th:if="${r.hidden == null or r.hidden != 1}">
+                  <form class="inline-form" method="post"
+                        th:action="@{/reviews/{id}/{a}(id=${r.id}, a='hide')}"
+                        data-confirm-title="隐藏评价" data-confirm-ok="确认隐藏"
+                        data-confirm="隐藏这条评价？读者端就不再显示（内容仍保留）。">
+                    <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                    <input type="hidden" name="back_q" th:value="${q}" />
+                    <button class="btn btn-sm" type="submit">隐藏</button>
+                  </form>
+                </th:block>
+                <form class="inline-form" method="post"
+                      th:action="@{/reviews/{id}/{a}(id=${r.id}, a='delete')}"
+                      data-confirm-title="删除评价" data-confirm-ok="确认删除"
+                      data-confirm-danger="" data-confirm="彻底删除这条评价？无法恢复。">
+                  <input type="hidden" name="csrf_token" th:value="${csrfToken}" />
+                  <input type="hidden" name="back_q" th:value="${q}" />
+                  <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${rows.isEmpty()}"><span class="empty-ico">⭐</span>还没有读者写评价</div>
+  </div>
+</div>
+</div>
+</body>
+</html>

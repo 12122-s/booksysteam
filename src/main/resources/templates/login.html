@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="|登录 · ${conf['library_name']}|">登录</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="login-split">
+
+  <!-- 左边：插画 -->
+  <section class="login-art">
+    <div class="art-brand">
+      <div class="brand-logo">书</div>
+      <div class="art-brand-name" th:text="${conf['library_name']}">我的图书室</div>
+    </div>
+    <div class="art-figure">
+      <img th:src="@{/img/login-illustration.svg}" alt="">
+    </div>
+  </section>
+
+  <!-- 右边：登录表单 -->
+  <section class="login-panel">
+    <div class="login-box">
+      <p class="login-hello">欢迎使用</p>
+      <h1 class="login-h1" th:text="${conf['library_name']}">我的图书室</h1>
+
+      <div class="flash-area" th:if="${flashList != null and !flashList.isEmpty()}">
+        <div th:each="f : ${flashList}" th:class="'flash flash-' + ${f.category}">
+          <span th:text="${f.message}"></span>
+        </div>
+      </div>
+
+      <div class="flash flash-warn" th:if="${defaultPassword}">
+        <span>当前还在使用初始密码 123456，登录后请到「系统设置」里修改。</span>
+      </div>
+
+      <form method="post" class="login-form" th:action="@{/login}">
+        <input type="hidden" name="csrf_token" th:value="${csrfToken}">
+        <input type="hidden" name="next" th:value="${next}">
+
+        <div class="field-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input class="input input-lg" type="text" id="account" name="account"
+                 placeholder="请输入账号" autofocus required>
+        </div>
+
+        <div class="field-icon" style="margin-top:14px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="10" width="16" height="11" rx="2.5"/>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+          </svg>
+          <input class="input input-lg" type="password" id="password" name="password"
+                 placeholder="请输入密码" required>
+        </div>
+
+        <div class="login-row">
+          <label class="check">
+            <input type="checkbox" name="remember" value="1"> 记住我
+          </label>
+          <a class="login-forgot" th:href="@{/reader/forgot}">忘记密码？</a>
+        </div>
+
+        <button class="btn-login" type="submit">登 录</button>
+      </form>
+
+      <div class="reader-entries">
+        <div class="reader-entries-title">还没有借书卡？</div>
+        <a class="btn btn-primary btn-block" th:href="@{/reader/signup}">📝 我要办卡（新读者注册）</a>
+        <a class="btn btn-block" th:href="@{/reader/register}" style="margin-top:8px;">我已有卡号，设置网上密码</a>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>
