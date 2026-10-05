@@ -22,6 +22,9 @@ import jakarta.servlet.http.HttpSession;
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(AuthInterceptor.class);
+
     /** 无需登录的路径前缀/精确路径。 */
     private static final Set<String> PUBLIC_GET_PATHS = Set.of(
             "/login", "/logout", "/logout-all", "/health", "/notice", "/error",
@@ -90,6 +93,8 @@ public class AuthInterceptor implements HandlerInterceptor {
                 }
                 String stored = (String) session.getAttribute("_csrf");
                 if (token == null || stored == null || !token.equals(stored)) {
+                    log.warn("CSRF 校验失败，已拒绝：{} {}（IP {}）",
+                            request.getMethod(), path, request.getRemoteAddr());
                     response.sendError(400, "安全校验失败：请返回上一页刷新后重新提交。");
                     return false;
                 }

@@ -22,6 +22,9 @@ import com.library.util.DateUtil;
 @Service
 public class BorrowService {
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(BorrowService.class);
+
     /** 业务操作结果：成功与否 + 给用户的提示（对应 Python 版的 flash 消息）。 */
     public record OpResult(boolean ok, String message) {
         public static OpResult ok(String message) {
@@ -116,6 +119,7 @@ public class BorrowService {
         // @Transactional 会把这次扣减一起回滚，不会出现“扣了库存没借出”。
         int updated = bookDao.decrementAvailableIfAvailable(bookId);
         if (updated != 1) {
+            log.warn("图书 {} 原子扣减失败：库存被并发借完（管理员借出路径）", bookId);
             return OpResult.fail("很抱歉，《" + book.getTitle() + "》刚刚被借完了");
         }
         borrowDao.insert(bookId, readerId, DateUtil.todayStr(), DateUtil.format(due), "管理员", remark);

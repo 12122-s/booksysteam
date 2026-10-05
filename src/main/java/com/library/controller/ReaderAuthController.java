@@ -4,9 +4,13 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -23,6 +27,7 @@ import com.library.web.Flash;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 import static com.library.controller.BookController.param;
 import static com.library.controller.BookController.singleParams;
@@ -33,6 +38,8 @@ import static com.library.controller.BookController.singleParams;
  */
 @Controller
 public class ReaderAuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(ReaderAuthController.class);
 
     private static final int RESET_CODE_MINUTES = 30;
     private static final int RESET_RESEND_SECONDS = 60;
@@ -114,6 +121,7 @@ public class ReaderAuthController {
         session.setAttribute("reader_id", reader.getId());
         session.setAttribute("reader_name", reader.getName());
         session.setAttribute("reader_card", reader.getCardNo());
+        log.info("读者设置网上密码成功：{}（卡号 {}）", reader.getName(), reader.getCardNo());
         Flash.ok(ra, "注册成功，欢迎你，" + reader.getName() + "！现在可以上网借书了。");
         return "redirect:/reader/";
     }
@@ -127,14 +135,23 @@ public class ReaderAuthController {
     }
 
     @PostMapping("/reader/signup")
-    public String signup(HttpServletRequest request, HttpSession session, RedirectAttributes ra) {
+    public String signup(@Valid @ModelAttribute com.library.dto.ReaderSignupForm form,
+                         BindingResult bindingResult,
+                         HttpServletRequest request,
+                         HttpSession session,
+                         RedirectAttributes ra) {
         if (!settings.getBool("reader_self_register")) {
             Flash.error(ra, "图书室暂时关闭了网上办卡，请到图书室现场办卡。");
             return "redirect:/login";
         }
-        String name = param(request, "name");
-        String phone = param(request, "phone");
-        String password = request.getParameter("password");
+        // 格式校验（姓名/手机号/密码长度），消息与页面文案一致
+        if (bindingResult.hasErrors()) {
+            Flash.error(ra, bindingResult.getFieldError().getDefaultMessage());
+            return "redirect:/reader/signup";
+        }
+        String name = form.getName();
+        String phone = form.getPhone();
+        String password = form.getPassword();
         String confirm = request.getParameter("confirm_password");
         String readerType = param(request, "reader_type");
         if (readerType.isEmpty()) {
@@ -142,17 +159,10 @@ public class ReaderAuthController {
         }
         String department = param(request, "department");
         String email = param(request, "email");
-        String digits = phone.replace("-", "").replace(" ", "");
 
         String error = null;
-        if (name.isEmpty()) {
-            error = "请填写姓名";
-        } else if (digits.isEmpty() || !digits.matches("\\d+") || digits.length() < 6 || digits.length() > 20) {
-            error = "手机号请填写数字（例如 13800000000），方便图书室联系你";
-        } else if (readerDao.phoneExists(phone)) {
+        if (readerDao.phoneExists(phone)) {
             error = "这个手机号已经办过卡了，请直接登录；忘记密码可以找管理员重置。";
-        } else if (password == null || password.length() < 6) {
-            error = "密码至少要 6 位";
         } else if (!password.equals(confirm)) {
             error = "两次输入的密码不一样，请重新输入";
         } else if (request.getParameter("agree") == null) {
@@ -177,6 +187,8 @@ public class ReaderAuthController {
         reader.setStatus(needApproval ? "待审核" : "正常");
         reader.setSource("自助注册");
         int newId = readerDao.insertWithPassword(reader);
+        log.info("读者自助办卡：{}（卡号 {}，{}）", name, cardNo,
+                needApproval ? "待审核" : "直接生效");
 
         session.setAttribute("reader_id", newId);
         session.setAttribute("reader_name", name);
@@ -303,6 +315,7 @@ public class ReaderAuthController {
             readerDao.updatePassword(readerId, PasswordUtil.hash(password));
             auxDao.markResetUsed(readerId);
             session.removeAttribute("reset_reader_id");
+            log.info("读者重置密码成功：{}（卡号 {}）", reader.getName(), reader.getCardNo());
             Flash.ok(ra, "密码修改成功，请用新密码登录。");
             return "redirect:/login";
         }

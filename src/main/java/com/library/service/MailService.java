@@ -17,6 +17,9 @@ import jakarta.mail.internet.MimeMessage;
 @Service
 public class MailService {
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(MailService.class);
+
     /** 一次发送的结果：成功与否 + 失败原因（给页面提示用）。 */
     public record SendResult(boolean ok, String reason) {
         public static SendResult success() {
@@ -60,6 +63,8 @@ public class MailService {
             if (reason == null) {
                 reason = e.getClass().getSimpleName();
             }
+            log.warn("邮件发送失败：{} -> {}（{}）", subject, toEmail,
+                    reason.length() > 150 ? reason.substring(0, 150) : reason);
             return new SendResult(false, reason.length() > 150 ? reason.substring(0, 150) : reason);
         }
     }

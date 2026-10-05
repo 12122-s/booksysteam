@@ -189,6 +189,9 @@ public class DatabaseInitializer implements ApplicationRunner {
         this.jdbc = jdbc;
     }
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(DatabaseInitializer.class);
+
     @Override
     public void run(ApplicationArguments args) {
         createDatabaseIfAbsent();
@@ -198,6 +201,8 @@ public class DatabaseInitializer implements ApplicationRunner {
         ensureColumns();
         ensureIndexes();
         seedDefaultSettings();
+        log.info("数据库初始化完成：建表 {} 张、补字段/索引 {} 项（已存在的自动跳过）",
+                SCHEMA.size(), ENSURE_COLUMNS.size() + WANTED_INDEXES.size());
     }
 
     /** 先连服务器（不指定库）确保数据库存在；没有建库权限时忽略（库可能已由平台建好）。 */

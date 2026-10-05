@@ -21,6 +21,9 @@ import com.library.util.DateUtil;
 @Service
 public class ReminderService {
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(ReminderService.class);
+
     private static final int SAME_REMINDER_HOURS = 20;
     private static final Set<Integer> OVERDUE_POINTS = Set.of(1, 3, 7, 14, 21, 30);
 
@@ -126,6 +129,7 @@ public class ReminderService {
             logService.action("发送到期提醒", "成功 " + sent + " 封",
                     "跳过 " + skipped + "，失败 " + failed, "系统", "系统", "");
         }
+        log.info("到期提醒执行完成：发送 {} 封，失败 {}，跳过 {}", sent, failed, skipped);
         return new ReminderStats(true, sent, skipped, failed, detail);
     }
 

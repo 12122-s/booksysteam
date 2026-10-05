@@ -16,12 +16,18 @@ public class BackupScheduler {
         this.backupService = backupService;
     }
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(BackupScheduler.class);
+
     @Scheduled(initialDelay = 120_000, fixedDelay = 30 * 60_000)
     public void dailyBackup() {
         try {
-            backupService.runDailyBackupIfNeeded();
+            String name = backupService.runDailyBackupIfNeeded();
+            if (name != null) {
+                log.info("每日自动备份完成：{}", name);
+            }
         } catch (Exception e) {
-            // 备份失败不影响主流程
+            log.warn("每日自动备份执行失败", e);
         }
     }
 }
