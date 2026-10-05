@@ -125,6 +125,18 @@ def main():
     r = reader.get(f"{BASE}/reader/logout")
     ok("读者退出", r.status_code in (200, 301, 302), r.status_code)
 
+    # ---------------- REST API：读者身份 ----------------
+    api = f"{BASE}/api/v1"
+    r = reader.post(f"{api}/auth/login",
+                    json={"account": card, "password": "abc12345"})
+    ok("API 读者登录换 token", r.status_code == 200 and r.json().get("token"), r.status_code)
+    rtoken = r.json().get("token", "")
+    rauth = {"Authorization": f"Bearer {rtoken}"}
+    r = reader.get(f"{api}/me", headers=rauth)
+    ok("API 读者 /me", r.status_code == 200 and r.json().get("role") == "reader", r.status_code)
+    r = reader.get(f"{api}/readers", headers=rauth)
+    ok("API 读者查管理接口被拒（403）", r.status_code == 403, r.status_code)
+
     print()
     print(f"读者端流程：通过 {PASS} 项，失败 {FAIL} 项")
     sys.exit(1 if FAIL else 0)

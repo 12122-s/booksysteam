@@ -150,11 +150,47 @@ mvn test
 
 ## 后续计划
 
-- [ ] 抽取 RESTful API（`/api/v1/...`）+ JWT 认证 + OpenAPI 文档
+- [x] RESTful API（`/api/v1/...`）+ JWT 认证 + OpenAPI/Swagger 文档
 - [x] Docker 部署（Dockerfile + docker-compose，可选独立 MySQL 容器）
 - [x] CI（GitHub Actions：单元测试 + 真 MySQL 端到端冒烟）
 - [x] 与 Python 版数据库/密码/备份互通
 - [x] 到期提醒 + 每日自动备份定时任务
+
+---
+
+## REST API（v1）
+
+JWT 认证的 REST 接口，与服务端渲染页面共用同一套 Service 层：
+
+| 方法 | 路径 | 身份 | 说明 |
+| --- | --- | --- | --- |
+| POST | `/api/v1/auth/login` | 公开 | 登录换 token（管理员账号或读者卡号/手机号） |
+| GET | `/api/v1/me` | 登录 | 当前身份（role/name/readerId） |
+| GET | `/api/v1/books` | 登录 | 图书列表（q/category/available/page） |
+| GET | `/api/v1/books/{id}` | 登录 | 图书详情 |
+| GET | `/api/v1/readers` | admin | 读者列表 |
+| GET | `/api/v1/borrows` | admin | 借阅记录（status=borrowing/overdue/returned） |
+| POST | `/api/v1/borrows` | admin | 办理借出 |
+| POST | `/api/v1/borrows/{id}/return` | admin | 办理还书 |
+| POST | `/api/v1/borrows/{id}/renew` | 登录 | 续借（读者只能续自己的） |
+| GET | `/api/v1/stats/overview` | admin | 库存与罚金总览 |
+
+用法：
+
+```bash
+# 登录换 token
+curl -X POST http://localhost:8080/api/v1/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"account":"admin","password":"123456"}'
+
+# 带 token 调用
+curl http://localhost:8080/api/v1/books -H "Authorization: Bearer <token>"
+```
+
+- 交互式文档：**http://localhost:8080/swagger-ui.html**（右上角 Authorize 填 token）
+- 错误统一返回 `{"code":401,"message":"..."}`，401=未登录/token 失效，403=角色不够
+- 密钥：`LIB_JWT_SECRET`（至少 32 字符，生产环境务必覆盖默认值）；token 有效期默认 120 分钟
+- 登录接口与页面共用同一套限流（15 分钟内失败 5 次锁定）
 
 ---
 

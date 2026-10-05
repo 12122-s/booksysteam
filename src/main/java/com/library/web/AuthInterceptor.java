@@ -52,6 +52,10 @@ public class AuthInterceptor implements HandlerInterceptor {
             session.setAttribute("_boot", bootToken.get());
         }
         String path = request.getRequestURI().substring(request.getContextPath().length());
+        // REST API 走 JWT 拦截器（ApiAuthInterceptor），页面会话体系不管它
+        if (path.startsWith("/api/")) {
+            return true;
+        }
         boolean loggedIn = Boolean.TRUE.equals(session.getAttribute("logged_in"));
         boolean readerIn = session.getAttribute("reader_id") != null;
 
@@ -59,6 +63,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 || path.startsWith("/static")
                 || path.startsWith("/css") || path.startsWith("/js") || path.startsWith("/img")
                 || path.startsWith("/uploads")
+                || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui")
                 || (path.equals("/reader/logout"));
         // 公告页是公开的；favicon 404 不拦截
         isPublic = isPublic || path.equals("/favicon.ico");
