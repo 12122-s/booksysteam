@@ -96,9 +96,6 @@ public class BorrowService {
         if (!"正常".equals(reader.getStatus())) {
             return OpResult.fail(reader.getName() + " 当前状态是「" + reader.getStatus() + "」，不能借书");
         }
-        if (book.getAvailableCopies() == null || book.getAvailableCopies() <= 0) {
-            return OpResult.fail("《" + book.getTitle() + "》可借册数为 0，暂时借不出去");
-        }
         int maxBooks = settings.getInt("max_books_per_reader");
         int borrowing = readerDao.borrowingCount(readerId);
         if (borrowing >= maxBooks) {
@@ -112,8 +109,16 @@ public class BorrowService {
         if (due.isBefore(LocalDate.now())) {
             return OpResult.fail("应还日期不能早于今天");
         }
+        // 原子扣减库存：和读者自助借书走同一条路，把“判断还有没有库存”和“扣减”
+        // 合并成一条 UPDATE ... WHERE available_copies > 0，由数据库保证原子性。
+        // 否则两个管理员同时借最后一册时，check-then-act 竞态会把库存扣成负数、
+        // 还多出一条借阅记录。影响行数 != 1 = 没抢到；写借阅记录若失败，
+        // @Transactional 会把这次扣减一起回滚，不会出现“扣了库存没借出”。
+        int updated = bookDao.decrementAvailableIfAvailable(bookId);
+        if (updated != 1) {
+            return OpResult.fail("很抱歉，《" + book.getTitle() + "》刚刚被借完了");
+        }
         borrowDao.insert(bookId, readerId, DateUtil.todayStr(), DateUtil.format(due), "管理员", remark);
-        bookDao.decrementAvailable(bookId);
         // 如果这位读者之前提交过借阅申请，自动标记为已办理
         requestDao.completeFor(readerId, bookId);
         return OpResult.ok("借出成功：《" + book.getTitle() + "》→ " + reader.getName()

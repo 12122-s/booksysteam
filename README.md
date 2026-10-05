@@ -119,9 +119,13 @@ LIB_DB_HOST=127.0.0.1 LIB_DB_PASSWORD=你的密码 java -jar booksysteam-1.0.0.j
 ## 测试
 
 ```bash
-# 单元测试：不需要数据库，覆盖密码兼容、CSV/GBK 解码、日期容错、SQL 转义
+# 单元测试：不需要数据库。覆盖密码兼容、CSV/GBK 解码、日期容错、SQL 转义，
+# 以及借阅业务规则（含并发扣减回归：借出必须走原子扣减，防止超卖）
 mvn test
 ```
+
+每次 push / 提 PR 都会由 GitHub Actions 自动跑两层测试：单元测试（`mvnw test`）+
+起一个真 MySQL 的端到端检查（30 项冒烟 + 18 项读者端全流程），见 `.github/workflows/ci.yml`。
 
 ---
 
@@ -147,7 +151,8 @@ mvn test
 ## 后续计划
 
 - [ ] 抽取 RESTful API（`/api/v1/...`）+ JWT 认证 + OpenAPI 文档
-- [ ] 打包 Dockerfile + docker-compose（数据库/应用/nginx 三容器）
+- [x] Docker 部署（Dockerfile + docker-compose，可选独立 MySQL 容器）
+- [x] CI（GitHub Actions：单元测试 + 真 MySQL 端到端冒烟）
 - [x] 与 Python 版数据库/密码/备份互通
 - [x] 到期提醒 + 每日自动备份定时任务
 

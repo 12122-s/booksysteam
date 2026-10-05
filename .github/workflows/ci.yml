@@ -1,0 +1,87 @@
+# ============================================================
+#  GitHub Actions：每次 push / 提 PR 都自动跑一遍测试
+#  分两层：
+#    1) 单元测试：mvnw test，不连数据库，含并发扣减回归用例
+#    2) 端到端检查：GitHub 起一个真 MySQL，启动应用跑 30 项冒烟
+#       + 18 项读者端全流程
+# ============================================================
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # GitHub 帮我们起一个真的 MySQL，测试跑完自动销毁
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: library_system
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      LIB_DB_HOST: 127.0.0.1
+      LIB_DB_PORT: "3306"
+      LIB_DB_USER: root
+      LIB_DB_PASSWORD: root
+      LIB_DB_NAME: library_system
+
+    steps:
+      - name: 取出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+          cache: maven
+
+      # --- 第一层：单元测试（快，含借阅业务规则与并发扣减回归） ---
+      - name: 单元测试
+        run: |
+          chmod +x mvnw
+          ./mvnw -B test
+
+      # --- 第二层：端到端检查（起真服务，验证完整业务链路） ---
+      - name: 打包
+        run: ./mvnw -B -DskipTests package
+
+      - name: 启动服务
+        run: |
+          nohup java -jar target/booksysteam-1.0.0.jar > /tmp/app.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/health > /dev/null 2>&1; then
+              echo "服务已就绪"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "服务 60 秒内没起来"
+          cat /tmp/app.log
+          exit 1
+
+      - name: 安装测试依赖
+        run: pip install requests
+
+      - name: 冒烟检查（30 项）
+        run: python tests/smoke_test.py http://127.0.0.1:8080 123456 admin
+
+      - name: 读者端全流程（18 项）
+        run: python tests/reader_e2e.py
+
+      - name: 失败时打印应用日志
+        if: failure()
+        run: cat /tmp/app.log
