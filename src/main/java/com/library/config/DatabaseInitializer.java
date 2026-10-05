@@ -205,26 +205,54 @@ public class DatabaseInitializer implements ApplicationRunner {
                 SCHEMA.size(), ENSURE_COLUMNS.size() + WANTED_INDEXES.size());
     }
 
-    /** 先连服务器（不指定库）确保数据库存在；没有建库权限时忽略（库可能已由平台建好）。 */
+    /** 先连服务器（不指定库）确保数据库存在；没有建库权限时只记日志，不阻断启动。 */
     private void createDatabaseIfAbsent() {
+        String dbName = dbNameFromUrl(url);
+        if (dbName.isBlank()) {
+            log.warn("无法从 JDBC URL 解析出数据库名，跳过自动建库：{}", url);
+            return;
+        }
         try {
-            String dbName = dbNameFromUrl();
-            DataSource server = new DriverManagerDataSource(
-                    url.substring(0, url.indexOf('/', "jdbc:mysql://".length())) + "/?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true",
-                    username, password);
-            JdbcTemplate t = new JdbcTemplate(server);
-            t.execute("CREATE DATABASE IF NOT EXISTS `" + dbName
+            DataSource server = new DriverManagerDataSource(serverUrlOf(url), username, password);
+            new JdbcTemplate(server).execute("CREATE DATABASE IF NOT EXISTS `" + dbName
                     + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
         } catch (Exception e) {
-            // 没有建库权限不算错误：库已存在就能继续
+            // 没有建库权限不算错误（库通常已由平台建好），但必须记下来：
+            // 早先这里把异常完全吞掉，"库其实没建成"就一直沉默，
+            // 直到下一次启动失败才以 "Unknown database" 的形式暴露。
+            log.warn("自动建库未完成（库可能已存在，或当前账号没有建库权限）：{}", e.getMessage());
         }
     }
 
-    private String dbNameFromUrl() {
-        int slash = url.lastIndexOf('/');
-        String tail = url.substring(slash + 1);
-        int q = tail.indexOf('?');
-        return q >= 0 ? tail.substring(0, q) : tail;
+    /**
+     * 从 JDBC URL 里取出数据库名。
+     *
+     * <p>只能取 {@code jdbc:mysql://host:port/} 之后、第一个 {@code ?} 之前的那一段。
+     *
+     * <p>回归说明（真实踩过的坑）：早先的实现用的是 {@code url.lastIndexOf('/')}，
+     * 而 URL 的查询参数里带着 {@code serverTimezone=Asia/Shanghai} —— 最后那个
+     * 斜杠落在它身上，于是解析出来的"库名"是 {@code Shanghai&connectTimeout=8000}。
+     * 后果有三层：一是建出一个名字是乱码的垃圾库；二是异常被吞掉、毫无提示；
+     * 三是目标库从来没被建成，一旦它不是预先存在的，应用启动就直接失败。
+     */
+    static String dbNameFromUrl(String url) {
+        int start = url.indexOf('/', "jdbc:mysql://".length());
+        if (start < 0) {
+            return "";
+        }
+        int end = url.indexOf('?', start);
+        String name = end < 0 ? url.substring(start + 1) : url.substring(start + 1, end);
+        return name.trim();
+    }
+
+    /** 把 JDBC URL 里的库名去掉，只留服务器地址，供"先连服务器建库"使用。 */
+    static String serverUrlOf(String url) {
+        int start = url.indexOf('/', "jdbc:mysql://".length());
+        if (start < 0) {
+            return url;
+        }
+        return url.substring(0, start)
+                + "/?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true";
     }
 
     private void ensureColumns() {
