@@ -17,7 +17,7 @@ import com.library.util.PasswordUtil;
 
 /**
  * 数据库初始化：启动时自动建库、建表、补字段、补索引、写默认设置。
- * 已存在的一律跳过，不会动用户数据 —— 与 Python 版 init_db() 行为一致。
+ * 已存在的一律跳过，不会动用户数据。
  * 这样部署时不需要手动执行任何 SQL 脚本。
  */
 @Component
@@ -158,7 +158,7 @@ public class DatabaseInitializer implements ApplicationRunner {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
             """);
 
-    /** 老版本数据库补字段（已存在的列会跳过），保证从 Python 版升级不丢数据。 */
+    /** 老版本数据库补字段（已存在的列会跳过），保证升级不丢数据。 */
     private static final List<String> ENSURE_COLUMNS = List.of(
             "ALTER TABLE books ADD COLUMN cover VARCHAR(200)",
             "ALTER TABLE borrow_records ADD COLUMN fine_paid TINYINT NOT NULL DEFAULT 0",
@@ -282,7 +282,7 @@ public class DatabaseInitializer implements ApplicationRunner {
         Integer count = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM settings WHERE `key` = 'admin_password_hash'", Integer.class);
         if (count == null || count == 0) {
-            // 初始密码 123456，用与 Python 版 werkzeug 兼容的 pbkdf2 格式存储
+            // 初始密码 123456，用 pbkdf2:sha256 格式存储
             jdbc.update("INSERT INTO settings(`key`, `value`) VALUES (?, ?)",
                     "admin_password_hash", PasswordUtil.hash("123456"));
         }

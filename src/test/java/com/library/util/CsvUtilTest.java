@@ -16,7 +16,7 @@ class CsvUtilTest {
 
     @Test
     void decodesUtf8WithBom() {
-        // Python 版导出的 CSV 带 UTF-8 BOM，必须能剥掉
+        // 带 UTF-8 BOM 的 CSV 必须能剥掉 BOM
         byte[] data = (BOM + "书名,作者\n三体,刘慈欣").getBytes(StandardCharsets.UTF_8);
         assertEquals("书名,作者\n三体,刘慈欣", CsvUtil.decode(data));
     }

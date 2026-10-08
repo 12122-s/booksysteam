@@ -110,7 +110,7 @@ public class ReaderAdminController {
         return "redirect:/readers";
     }
 
-    /** 新增/更新读者；返回错误提示，null 表示成功（对应 Python 版 save_reader）。 */
+    /** 新增/更新读者；返回错误提示，null 表示成功。 */
     private String save(Integer readerId, HttpServletRequest request) {
         String cardNo = param(request, "card_no");
         String name = param(request, "name");

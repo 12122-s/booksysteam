@@ -65,7 +65,7 @@ public class ReaderPortalController {
     }
 
     /** 读者书城：搜索/分类/只看可借 + 每本书的评分摘要 + “猜你可能想看”。
-     *  Python 版读者端首页是 /reader/（带尾斜杠），两种写法都接受。 */
+     *  读者端首页同时映射 /reader 与 /reader/（带尾斜杠）两种写法。 */
     @GetMapping({"/reader", "/reader/"})
     public String readerBooks(@RequestParam(required = false) String q,
                               @RequestParam(required = false) String category,

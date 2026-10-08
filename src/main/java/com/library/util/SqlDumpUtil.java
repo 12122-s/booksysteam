@@ -1,8 +1,8 @@
 package com.library.util;
 
 /**
- * 备份 SQL 的值转义，与 Python 版 quote_sql() 逐字兼容，
- * 保证 Python 版导出的备份能在 Java 版恢复（反之亦然）。
+ * 备份 SQL 的值转义规则：反斜杠双写、单引号转义为 \'、换行/回车/制表符转成 \n 与 \t，
+ * 转义后的字面量可以被 MySQL 直接执行，用于导出与恢复备份。
  */
 public final class SqlDumpUtil {
 

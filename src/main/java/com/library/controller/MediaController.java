@@ -22,7 +22,7 @@ import com.library.web.Flash;
 
 /**
  * 图片上传：图书封面（static 上传到项目 uploads/covers/）、收款码（uploads/pay/）。
- * 只允许 jpg/png/gif/webp，单张不超过 3MB，与 Python 版限制一致。
+ * 只允许 jpg/png/gif/webp，单张不超过 3MB。
  */
 @Controller
 public class MediaController {

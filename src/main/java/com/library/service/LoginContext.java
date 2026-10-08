@@ -12,7 +12,7 @@ import jakarta.servlet.http.HttpSession;
 /**
  * 当前登录身份上下文。
  *
- * <p>会话结构与 Python 版完全对齐（同一套前端行为）：
+ * <p>会话结构（前端各页面读的就是这几个键）：
  * - 管理员：session["logged_in"] = true
  * - 读者：  session["reader_id"] / reader_name / reader_card
  * - CSRF：  session["_csrf"]

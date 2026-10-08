@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Flash 消息（对应 Flask 的 flash()）：存进 redirect attributes，重定向后在下一页顶部显示。
+ * 一次性提示消息：存进 redirect attributes，重定向后在下一页顶部显示。
  * 一页可以有多条（还书时会连发“还书成功 + 到馆通知”两条）。
  */
 public final class Flash {

@@ -8,7 +8,7 @@ server:
 spring:
   application:
     name: library-system
-  # 数据库连接：默认本机 MySQL，可用环境变量 LIB_DB_* 覆盖（与 Python 版同名，方便迁移）
+  # 数据库连接：默认本机 MySQL，可用环境变量 LIB_DB_* 覆盖
   datasource:
     url: jdbc:mysql://${LIB_DB_HOST:127.0.0.1}:${LIB_DB_PORT:3306}/${LIB_DB_NAME:library_system}?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&connectTimeout=8000
     username: ${LIB_DB_USER:root}

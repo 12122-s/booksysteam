@@ -11,9 +11,8 @@
 - **管理员端** —— 图书、读者、借还、预约排队、罚金台账、统计报表、数据分析、批量导入导出、数据备份、操作日志；
 - **读者端** —— 自助办卡、卡号/手机号登录、找书、申请借阅、续借、写书评、在线缴费申请、找回密码。
 
-> **关于这个项目**：它是从同功能的 Python/Flask 版用 **Java 17 + Spring Boot 3** 重写的。
-> 库表结构、密码哈希格式、备份文件格式都与原版严格互通，因此可以**直连原有数据库无缝替换**，
-> 已有读者和密码不需要迁移、不需要重录。
+后端 Java 17 + Spring Boot 3，服务端渲染用 Thymeleaf，数据访问用 JdbcTemplate 直写 SQL，
+另有一套 JWT 认证的 REST API；一条 `docker compose up` 即可完整跑起来。
 
 <p align="center">
   <img src="src/main/resources/static/img/login-illustration.svg" alt="登录页插图" width="420">
@@ -31,7 +30,6 @@
 - [系统架构](#系统架构)
 - [REST API（v1）](#rest-apiv1)
 - [测试](#测试)
-- [与 Python 版的兼容性](#与-python-版的兼容性)
 - [几个实现上的取舍](#几个实现上的取舍)
 - [部署](#部署)
 - [注意事项](#注意事项)
@@ -53,10 +51,10 @@
 | 统计报表 | 分类分布、借阅排行、6 个月借阅趋势、库存概览、罚金台账 |
 | 数据分析 | 借阅趋势、分类热度、读者活跃度、按时归还率、借阅时长分布、图书周转率 |
 | 图书推荐 | 读者端「猜你可能想看」：按分类偏好推荐；新读者走热门兜底 |
-| 数据安全 | 每日自动备份、导出 CSV、导出完整 .sql、从备份恢复（与 Python 版备份文件互通） |
+| 数据安全 | 每日自动备份、导出 CSV、导出完整 .sql、从备份恢复 |
 | 其他 | 操作日志、打印借书单/催还单/书标、公告与规则页 |
 
-代码规模：约 **7400 行** Java 主代码、**530 行**单元测试、**35 个** Thymeleaf 页面、**9 张**数据表。
+规模：约 **7400 行** Java 主代码、**530 行**单元测试、**35 个** Thymeleaf 页面、**9 张**数据表、**23 个**控制器。
 
 ---
 
@@ -68,13 +66,13 @@
 | 数据访问 | Spring JDBC（JdbcTemplate）+ 手写 SQL，不用 ORM，便于控制查询和索引 |
 | 数据库 | MySQL 8（utf8mb4），启动时自动建库建表、补字段、补索引 |
 | 缓存 | 进程内 TTL 缓存（报表 60s / 分析 120s / 推荐 300s） |
-| 密码哈希 | PBKDF2 / Scrypt（BouncyCastle），**完全兼容 Python werkzeug 的哈希格式** |
+| 密码哈希 | PBKDF2-SHA256 与 scrypt 双算法（BouncyCastle）；哈希串自带算法名、盐与参数，可平滑升级算法 |
 | 认证 | 自写 `HandlerInterceptor`（会话 + CSRF）；REST 侧用 JWT（jjwt HS384） |
 | 接口文档 | springdoc-openapi + Swagger UI |
 | Excel 导入 | Apache POI |
 | 邮件 | Spring Mail（SMTP 参数存数据库，页面上可改） |
 | 构建 | Maven（`mvnw` 或本机 Maven 均可） |
-| 测试 | JUnit 5（单元测试不依赖数据库）+ Python/requests 端到端脚本 |
+| 测试 | JUnit 5（单元测试不依赖数据库）+ requests 端到端检查脚本 |
 | 部署 | Docker Compose（应用 + MySQL）、systemd + nginx |
 | CI | GitHub Actions |
 
@@ -84,8 +82,8 @@
 
 ### 方式一：Docker Compose（推荐，一条命令）
 
-`docker-compose.yml` 自带一个独立的 MySQL 容器，不碰宿主机上已有的数据库，
-数据落在宿主机的 `./dbdata` 目录里，看得见、好备份。
+`docker-compose.yml` 自带一个独立的 MySQL 容器，数据落在宿主机的 `./dbdata` 目录里，
+看得见、好备份，也不会碰到你机器上已有的数据库。
 
 ```bash
 # 需要先装好 Docker
@@ -133,14 +131,14 @@ java -jar target/booksysteam-1.0.0.jar
 
 ### 方式三：部署到 Linux 服务器
 
-见 [docs/虚拟机部署说明.md](docs/虚拟机部署说明.md)，里面覆盖了裸机 systemd、Docker、
-nginx 反向代理，以及「和已有的 Python 版并行试用 / 平滑替换上线」两种上线的具体步骤。
+见 [docs/虚拟机部署说明.md](docs/虚拟机部署说明.md)，覆盖裸机 systemd、Docker Compose、
+nginx 反向代理三种方式。
 
 ---
 
 ## 环境变量
 
-所有配置都有可用的开发默认值，生产环境请用环境变量覆盖（与 Python 版同名，方便迁移）。
+所有配置都有可用的开发默认值，生产环境请用环境变量覆盖。
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -178,10 +176,10 @@ booksysteam/
 │   ├── templates/                  Thymeleaf 模板（fragments/ 里是布局片段）
 │   └── static/                     样式、脚本、插图
 ├── src/test/java/                  单元测试（43 个，不需要数据库）
-├── tests/                          端到端检查脚本（Python + requests，CI 里跑）
+├── tests/                          端到端检查脚本（requests，CI 里跑）
 │   ├── smoke_test.py               冒烟：公开页 / 管理端 / 导出 / 写操作 / REST API
 │   └── reader_e2e.py               读者端全流程：办卡 → 审核 → 借还 → 续借 → 书评
-├── docs/虚拟机部署说明.md            服务器部署与平滑替换上线指南
+├── docs/虚拟机部署说明.md            服务器部署指南
 ├── deploy/start.sh                 服务器裸机启动脚本（不用 Docker 时）
 ├── .github/workflows/ci.yml        GitHub Actions
 ├── Dockerfile                      jar → 运行镜像
@@ -247,7 +245,7 @@ curl http://localhost:8080/api/v1/books -H "Authorization: Bearer <token>"
 
 ```bash
 # 单元测试：43 项，不需要数据库
-# 覆盖密码兼容、CSV/GBK 解码、日期容错、SQL 转义、JWT、登录限流，
+# 覆盖密码哈希、CSV/GBK 解码、日期容错、SQL 转义、JWT、登录限流，
 # 以及借阅业务规则（含并发扣减回归：借出必须走原子扣减，防止超卖）
 mvnw.cmd test        # Windows
 ./mvnw test          # Linux / macOS
@@ -270,47 +268,30 @@ python tests/reader_e2e.py
 
 ---
 
-## 与 Python 版的兼容性
-
-这一版刻意做到了「数据层完全互通」，方便平滑升级：
-
-- **数据库表结构一致**：`books` / `readers` / `borrow_records` / `settings` / `password_resets` /
-  `reminder_logs` / `operation_logs` / `book_reviews` / `borrow_requests` 九张表一模一样；
-  启动时自动补齐 Python 版后来加的列和索引。
-- **密码哈希互通**：Python 版存的 `scrypt:...` / `pbkdf2:sha256:...` 哈希，Java 版能直接校验
-  （有单元测试锁定这个行为）；Java 新写的哈希 Python 版也能校验。
-- **备份文件互通**：Java 版导出的 `.sql` 备份转义规则与 Python 版逐字一致，两边互相能恢复。
-- **上传目录约定一致**：封面在 `uploads/covers/`，收款码在 `uploads/pay/`。
-
-**有一处刻意的小改动**：Python 版的缓存支持 Redis（单实例下其实很少用上），
-Java 版改为进程内 TTL 缓存，行为效果一致（报表容忍 60 秒旧数据，换取大量重复计算）。
-将来要多实例部署时再引入 Redis。这也是 Docker Compose 里只有「应用 + MySQL」两个服务、
-没有 Redis 和 Nginx 的原因 —— 单实例部署下它们是多余的组件。
-
----
-
 ## 几个实现上的取舍
 
-**1. 为什么继续手写 SQL，不用 ORM（MyBatis/JPA）？**
-和 Python 版同一取向：查询以「多表 JOIN + 分组统计」为主，SQL 直写、好优化、好索引。
-Java 侧用 `JdbcTemplate` + `BeanPropertyRowMapper` 把样板代码降到最低，实体类用 Plain POJO。
+**1. 为什么手写 SQL，不用 ORM（MyBatis/JPA）？**
+这个系统的查询以「多表 JOIN + 分组聚合」为主，SQL 直写更好控制和优化，
+报表场景也不容易生成低效语句。`JdbcTemplate` + `BeanPropertyRowMapper`
+已经把样板代码降得很低，实体类用 Plain POJO。
 
 **2. 为什么不用 Spring Security？**
 登录模型是「管理员 + 读者」双身份共用一个会话（还能同浏览器双登录、系统重启全员下线），
-套 Spring Security 的 Filter 链反而绕。所以按 Python 版的逻辑自写了 `AuthInterceptor`：
+套 Spring Security 的 Filter 链反而绕。所以自写了 `AuthInterceptor`：
 路径前缀分流 + CSRF 校验 + 启动戳失效，逻辑一目了然。
+REST 侧同理，用 `ApiAuthInterceptor` 做令牌校验与角色鉴权。
 
 **3. 为什么邮件发送参数存数据库而不是 application.yml？**
 发件邮箱要在管理页面上随时改（换授权码不用改配置文件重启），
 所以每次发送时按当前设置动态构建 `JavaMailSender`。
 
 **4. 为什么自动任务用 `@Scheduled`？**
-到期提醒（每 30 分钟）和每日备份（每 30 分钟检查当天是否已备）与 Python 版的线程方案一致；
-单实例部署下 `@Scheduled` 最简单可靠。要多实例部署时需先把这两个任务拆出去
-（与 Python 版同样的约束）。
+到期提醒（每 30 分钟）和每日备份（每 30 分钟检查当天是否已备）都是单实例任务；
+单实例部署下 `@Scheduled` 最简单可靠。要多实例部署时需先把这两个任务拆出去，
+否则同一封提醒邮件会重复发。
 
 **5. 日期为什么存字符串？**
-与 Python 版一致：`YYYY-MM-DD` 存库，和表单、Excel 导入导出格式完全一致，不用来回转换。
+`YYYY-MM-DD` 存库，和表单、Excel 导入导出格式完全一致，不用来回转换。
 `DateUtil.parseDate()` 对脏数据容错返回 `null`。
 
 **6. 借出为什么必须是「条件 UPDATE + 判断影响行数」？**
@@ -327,11 +308,11 @@ Java 侧用 `JdbcTemplate` + `BeanPropertyRowMapper` 把样板代码降到最低
 | 场景 | 做法 |
 | --- | --- |
 | 本地试用 / 演示 | `docker compose up -d --build` → http://localhost:8081 |
-| 服务器独立部署 | 同上；数据在 `./dbdata`，上传和备份建议挂卷 |
+| 服务器部署（推荐） | 同上；数据在 `./dbdata`，上传和备份挂到宿主机目录 |
 | 服务器裸机（不用 Docker） | 见 [docs/虚拟机部署说明.md](docs/虚拟机部署说明.md)，用 `deploy/start.sh` 或 systemd |
-| 替换已有的 Python 版 | 让 Java 版直连原库（不改 `LIB_DB_NAME`），先用 8081 并行试用，确认后切 8080 |
+| 对外用 80 端口 | nginx 反代到应用端口，配置模板见部署文档 |
 
-**让它常驻**：建议用 systemd 托管（开机自启 + 崩溃自动拉起），nginx 做反向代理，
+**让它常驻**：建议用 systemd 托管（开机自启 + 崩溃自动拉起），
 配置模板见 [docs/虚拟机部署说明.md](docs/虚拟机部署说明.md)。
 
 ---
@@ -343,11 +324,5 @@ Java 侧用 `JdbcTemplate` + `BeanPropertyRowMapper` 把样板代码降到最低
 - **首次部署后立刻修改管理员密码**（`admin` / `123456` 是公开的初始值），
   并检查「系统设置」里的借期、罚金等规则；
 - **生产环境务必覆盖 `LIB_JWT_SECRET`**，并确认 SMTP 授权码只存在数据库设置里；
-- 共用同一个库同时跑 Python 版和 Java 版时，两边的「到期提醒」和「每日备份」定时任务
-  会重复执行，记得关掉其中一边的开关。
-
----
-
-## 说明
-
-Python/Flask 原版与本项目共用同一套库表设计。本仓库只包含 Java 版实现。
+- 定时任务与 `@Scheduled` 和进程绑定，**同一套数据库不要同时跑多个实例**，
+  否则会重复发提醒邮件、重复备份。

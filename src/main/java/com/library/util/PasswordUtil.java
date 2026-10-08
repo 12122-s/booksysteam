@@ -12,13 +12,13 @@ import javax.crypto.spec.PBEKeySpec;
 import org.bouncycastle.crypto.generators.SCrypt;
 
 /**
- * 密码哈希工具，与 Python 版 werkzeug 的 generate/check_password_hash 完全兼容。
+ * 密码哈希工具，支持 scrypt 与 pbkdf2:sha256 两种哈希格式的生成与校验。
  *
- * <p>这一点很关键：Java 版可以直连 Python 版用过的同一个数据库，里面已存的
- * 读者密码哈希（werkzeug 3 默认是 "scrypt:32768:8:1$盐$哈希" 格式）必须能校验，
- * 老数据里可能还有 "pbkdf2:sha256:600000$盐$哈希" 和更早的 "sha1$盐$哈希"。
+ * <p>校验时要能识别数据库里已存的三种写法：
+ * "scrypt:32768:8:1$盐$哈希"、"pbkdf2:sha256:600000$盐$哈希"，
+ * 以及更早的 "sha1$盐$哈希"；无法识别的格式一律返回 false。
  *
- * <p>新生成的哈希统一用 pbkdf2:sha256（JDK 原生支持，两种语言都能校验），
+ * <p>新生成的哈希统一用 pbkdf2:sha256（JDK 原生支持），
  * 格式：{@code pbkdf2:sha256:600000$盐$哈希hex}。
  */
 public final class PasswordUtil {
@@ -30,7 +30,7 @@ public final class PasswordUtil {
     private PasswordUtil() {
     }
 
-    /** 生成哈希（werkzeug 可校验的 pbkdf2:sha256 格式）。 */
+    /** 生成哈希（pbkdf2:sha256 格式）。 */
     public static String hash(String password) {
         String salt = randomSalt(16);
         byte[] digest;

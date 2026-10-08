@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * 统一错误页（对应 Python 版 errorhandler 400/404/500）。
+ * 统一错误页：400/404/500 等错误都落到这里。
  * 关闭 Whitelabel，改成与全站一致的 error.html。
  */
 @Controller

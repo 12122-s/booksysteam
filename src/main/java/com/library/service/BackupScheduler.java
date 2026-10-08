@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * 每日自动备份定时任务：每 30 分钟检查一次“今天备份了没有”，没备过就备一次。
- * 开关和保留天数在系统设置里。与 Python 版的维护线程行为一致。
+ * 开关和保留天数在系统设置里。
  */
 @Service
 public class BackupScheduler {

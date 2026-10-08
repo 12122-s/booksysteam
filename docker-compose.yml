@@ -2,7 +2,7 @@
 # Java 版图书管理系统 · 并行试用（Docker）
 #
 #   - 自带一个独立的 MySQL（数据和宿主机的宝塔 MySQL 完全隔开）
-#   - 宿主机端口 8081（Python 版占 8080），独立库 library_java
+#   - 宿主机端口 8081，独立库 library_java
 #   - 应用用「专用账号」连库，而不是 root（最小权限原则）
 #
 # 用法（在服务器的 ~/library-java 目录下）：
@@ -50,7 +50,7 @@ services:
     depends_on:
       library-db:
         # 关键：等 MySQL 真的能连了再启动应用，避免启动即报错、
-        # 然后靠 restart 反复重启（Python 版用的是同一种写法）
+        # 然后靠 restart 反复重启
         condition: service_healthy
     ports:
       - "8081:8081"

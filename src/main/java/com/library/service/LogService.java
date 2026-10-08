@@ -7,7 +7,7 @@ import com.library.util.DateUtil;
 
 /**
  * 操作日志：谁、什么时候、干了什么。
- * 日志写失败不能影响主流程，所以异常全部吞掉（与 Python 版 log_action 一致）。
+ * 日志写失败不能影响主流程，所以异常全部吞掉。
  */
 @Service
 public class LogService {

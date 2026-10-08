@@ -4,7 +4,7 @@ package com.library.entity;
  * 借阅记录。
  *
  * <p>除了表里的原始字段，还带两类附加字段：
- * 1) 联查字段（bookTitle / readerName 等，对应 Python 版 SQL 里的 JOIN）；
+ * 1) 联查字段（bookTitle / readerName 等，来自 SQL 的 JOIN）；
  * 2) 计算字段（status / overdueDays / fine / daysLeft），由 Service 统一填充，
  *    规则见 BorrowService#decorate。
  */

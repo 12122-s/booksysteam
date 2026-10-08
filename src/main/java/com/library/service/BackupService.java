@@ -19,8 +19,8 @@ import com.library.util.SqlDumpUtil;
 
 /**
  * 数据备份：把全部数据导出成 .sql 文本（可用于恢复），存放在项目 backups 目录。
- * 与 Python 版逐字兼容：同样的 DELETE + INSERT 语句格式、同样的转义规则，
- * 所以 Python 版导出的备份可以直接在 Java 版恢复，反之亦然。
+ * 导出内容是 DELETE + INSERT 语句，配合 SqlDumpUtil 的转义规则，
+ * 生成的 .sql 文件可以用 MySQL 客户端直接执行来恢复数据。
  */
 @Service
 public class BackupService {

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * CSV 读写工具（与 Python 版行为一致）：
+ * CSV 读写工具：
  * 读：逗号分隔、双引号包裹、引号内两个双引号表示一个双引号；
  * 编码依次尝试 UTF-8（带/不带 BOM）→ GB18030（Excel 在中文系统上存的是 GBK）。
  * 写：加 UTF-8 BOM，Excel 直接打开中文不乱码。
@@ -37,7 +37,7 @@ public final class CsvUtil {
                 }
                 String text = sb.toString();
                 if (charset == StandardCharsets.UTF_8 && !text.isEmpty() && text.charAt(0) == '\ufeff') {
-                    text = text.substring(1);   // 去掉 UTF-8 BOM（utf-8-sig）
+                    text = text.substring(1);   // 去掉 UTF-8 BOM（带 BOM 的 UTF-8）
                 }
                 return text;
             } catch (Exception e) {

@@ -33,7 +33,7 @@
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
 
-        <!-- 数据访问：JdbcTemplate + 手写 SQL（与 Python 版保持同一取向，不用 ORM） -->
+        <!-- 数据访问：JdbcTemplate + 手写 SQL，不用 ORM -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
@@ -89,7 +89,7 @@
             <version>5.3.0</version>
         </dependency>
 
-        <!-- 校验 werkzeug scrypt: 格式的密码哈希（兼容 Python 版已有数据库） -->
+        <!-- 校验 scrypt: 格式的密码哈希（JDK 自带 PBKDF2，scrypt 由 BouncyCastle 提供） -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>

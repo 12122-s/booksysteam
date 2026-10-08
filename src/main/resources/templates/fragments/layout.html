@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <!--
-  布局片段：对应 Python 版 base.html（管理端）与 reader_base.html（读者端）。
+  布局片段：管理端与读者端共用的页面骨架。
   用法（页面模板）：
     <html th:replace="~{fragments/layout :: adminLayout(~{::#content}, 'books', '图书管理')}">
       <body><div id="content"> …页面内容… </div></body>

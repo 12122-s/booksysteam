@@ -17,7 +17,7 @@ import com.library.util.DateUtil;
 
 /**
  * 借阅业务：借出、还书、续借，以及给记录补算状态/逾期天数/罚金的 decorate()。
- * 罚金规则与 Python 版完全一致：未还时按“今天 - 应还日”实时计算，已还时用库里存的金额。
+ * 罚金规则：未还时按“今天 - 应还日”实时计算，已还时用库里存的金额。
  */
 @Service
 public class BorrowService {
@@ -25,7 +25,7 @@ public class BorrowService {
     private static final org.slf4j.Logger log =
             org.slf4j.LoggerFactory.getLogger(BorrowService.class);
 
-    /** 业务操作结果：成功与否 + 给用户的提示（对应 Python 版的 flash 消息）。 */
+    /** 业务操作结果：成功与否 + 给用户的提示。 */
     public record OpResult(boolean ok, String message) {
         public static OpResult ok(String message) {
             return new OpResult(true, message);
@@ -53,7 +53,7 @@ public class BorrowService {
 
     // ------------------------------------------------------------ 状态计算 --
 
-    /** 给借阅记录补上状态、逾期天数、罚金三个计算字段（Python 版 decorate_records）。 */
+    /** 给借阅记录补上状态、逾期天数、罚金三个计算字段。 */
     public void decorate(List<BorrowRecord> rows) {
         double finePerDay = settings.getDouble("fine_per_day");
         LocalDate today = LocalDate.now();

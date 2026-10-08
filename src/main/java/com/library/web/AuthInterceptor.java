@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * 统一拦截（对应 Python 版 @app.before_request guard()）：
+ * 统一拦截：
  * - 管理端路径（/reader/ 之外）需要管理员登录；
  * - 读者端路径（/reader/ 开头）需要读者登录；
  * - POST 表单必须带 CSRF 校验令牌（session 里存的 _csrf）。
@@ -70,7 +70,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         if (!isPublic) {
             // 读者端区域：/reader 和 /reader/xxx。注意 /readers 是管理端的读者管理，
-            // 不能用 startsWith("/reader") 判断（会把 /readers 误伤，Python 版踩过同一个坑）
+            // 不能用 startsWith("/reader") 判断（会把 /readers 误伤）
             boolean readerArea = path.equals("/reader") || path.startsWith("/reader/");
             if (readerArea) {
                 if (!readerIn) {

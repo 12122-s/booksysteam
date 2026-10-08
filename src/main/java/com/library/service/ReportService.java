@@ -15,7 +15,7 @@ import com.library.util.TtlCache;
 /**
  * 统计报表（管理端）：分类分布、借阅排行、6 个月趋势、库存与罚金汇总。
  * 全部是多表 JOIN + 分组统计，结果用 60 秒 TTL 缓存 —— 报表允许片刻旧数据，
- * 用它换掉每次刷新都全表扫描的开销（与 Python 版的取向一致）。
+ * 用它换掉每次刷新都全表扫描的开销。
  */
 @Service
 public class ReportService {
@@ -98,7 +98,7 @@ public class ReportService {
                 """, readerHandler);
         List<RankRow> hotReaders = withPercents(readerRaw);
 
-        // 近 6 个月借出量（当月也计入，与 Python 版报表口径一致）
+        // 近 6 个月借出量（当月也计入）
         List<MonthRow> monthRaw = new ArrayList<>();
         LocalDate today = LocalDate.now();
         for (int i = 5; i >= 0; i--) {

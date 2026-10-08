@@ -1,6 +1,6 @@
 package com.library.entity;
 
-/** 图书。日期/时间字段沿用数据库里的字符串存储（与 Python 版一致）。 */
+/** 图书。日期/时间字段在数据库里按字符串存储，如 "YYYY-MM-DD HH:mm:ss"。 */
 public class Book {
 
     private Integer id;

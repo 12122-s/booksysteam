@@ -19,8 +19,8 @@ class SqlDumpUtilTest {
     }
 
     @Test
-    void escapesLikePythonQuoteSql() {
-        // 与 Python 版 quote_sql 的转义规则逐字对齐（单引号转义为 \'），备份文件才能两种语言互通
+    void escapesSingleQuotesLikeSqlDump() {
+        // 备份 SQL 的转义规则：单引号转义为 \'、反斜杠双写、换行/制表符转成 \n 与 \t
         assertEquals("'It\\'s'", SqlDumpUtil.quoteSql("It's"));
         assertEquals("'a\\\\b'", SqlDumpUtil.quoteSql("a\\b"));
         assertEquals("'line1\\nline2'", SqlDumpUtil.quoteSql("line1\nline2"));

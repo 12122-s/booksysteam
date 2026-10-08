@@ -33,7 +33,7 @@ import jakarta.validation.Valid;
 
 /**
  * 统一登录入口：管理员进管理端，读者（卡号/手机号）进读者端；登出；健康检查。
- * 与 Python 版 login / logout / logout_all / health / api_pending_resets 一一对应。
+ * 另含全部登出（/logout-all）与待处理密码重置申请（/api/pending-resets）接口。
  * 登录失败按「账号 + IP」限流：15 分钟内失败 5 次暂时锁定，防暴力试密码。
  */
 @Controller
@@ -177,7 +177,7 @@ public class AuthController {
         return "redirect:" + target;
     }
 
-    /** 只退出管理端；读者端若同时开着不受影响（与 Python 版一致）。 */
+    /** 只退出管理端；读者端若同时开着不受影响。 */
     @PostMapping("/logout")
     public String logout(HttpSession session, RedirectAttributes ra) {
         boolean hadReader = session.getAttribute("reader_id") != null;

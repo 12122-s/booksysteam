@@ -119,7 +119,7 @@ public class BookController {
         return map;
     }
 
-    /** 新增/更新的公共校验与落库；返回错误提示，null 表示成功（对应 Python 版 save_book）。 */
+    /** 新增/更新的公共校验与落库；返回错误提示，null 表示成功。 */
     private String save(Integer bookId, HttpServletRequest request) {
         String title = param(request, "title");
         if (title.isEmpty()) {

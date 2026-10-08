@@ -34,7 +34,7 @@ import static com.library.controller.BookController.singleParams;
 
 /**
  * 读者认证流程：设置网上密码（已有卡号注册）/ 自助办卡 / 找回密码（验证码）。
- * 验证码 30 分钟有效、错 5 次作废、60 秒内不能重发 —— 与 Python 版规则一致。
+ * 验证码 30 分钟有效、错 5 次作废、60 秒内不能重发。
  */
 @Controller
 public class ReaderAuthController {

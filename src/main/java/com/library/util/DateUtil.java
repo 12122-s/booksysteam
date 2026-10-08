@@ -8,7 +8,7 @@ import java.time.format.DateTimeParseException;
 /**
  * 日期工具。
  *
- * <p>沿用了 Python 版的约定：借阅日期、应还日期等在数据库里存 "YYYY-MM-DD" 字符串，
+ * <p>约定：借阅日期、应还日期等在数据库里存 "YYYY-MM-DD" 字符串，
  * 时间戳存 "YYYY-MM-DD HH:mm:ss" 字符串，与表单、Excel 导入导出格式完全一致，
  * 不需要来回转换。解析时对脏数据做容错（返回 null 而不是抛异常）。
  */
@@ -38,7 +38,7 @@ public final class DateUtil {
             return null;
         }
         String text = value.toString().trim();
-        // "2026-01-02T03:04:05" 也能接受（Python 端存的是空格分隔，这里两种都认）
+        // "2026-01-02T03:04:05" 也能接受（空格分隔和 T 分隔两种写法都认）
         text = text.replace('T', ' ');
         try {
             return LocalDateTime.parse(text, DATETIME);

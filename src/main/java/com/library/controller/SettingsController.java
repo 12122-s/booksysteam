@@ -33,7 +33,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * 系统设置：借阅规则 / 管理密码 / 发件邮箱 / 备份与恢复 / 示例数据。
- * 与 Python 版 /settings 系列路由一一对应。
+ * 涵盖设置保存、清空数据、写入示例数据以及备份与恢复接口。
  */
 @Controller
 public class SettingsController {
@@ -96,7 +96,7 @@ public class SettingsController {
         textValues.put("announcement", param(request, "announcement"));
         textValues.put("pay_note", param(request, "pay_note"));
 
-        // 数字型设置：范围校验（与 Python 版一致）
+        // 数字型设置：范围校验
         Map<String, String> numberValues = new LinkedHashMap<>();
         String[][] checks = {
                 {"borrow_days", "1", "365", "默认借期请填 1~365 之间的天数"},
@@ -232,7 +232,7 @@ public class SettingsController {
         return "redirect:/settings";
     }
 
-    /** 写入示例图书、读者和借阅记录（首次体验用，与 Python 版相同的数据）。 */
+    /** 写入示例图书、读者和借阅记录（首次体验用）。 */
     private void seedDemoData() {
         String now = com.library.util.DateUtil.nowStr();
         String[][] books = {

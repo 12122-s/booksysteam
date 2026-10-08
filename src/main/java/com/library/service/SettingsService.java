@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * 系统设置：键值对存数据库 settings 表，内存缓存 30 秒减少查询。
- * 与 Python 版 get_settings()/save_setting() 行为一致：
+ * 读取规则：
  * 读取时以代码里的默认值兜底，数据库里有值就用数据库的。
  */
 @Service
@@ -103,7 +103,7 @@ public class SettingsService {
         cache = null;
     }
 
-    // ---- 类型化读取（解析失败回退默认值，与 Python 版 conf_int/conf_float 一致）----
+    // ---- 类型化读取（解析失败回退默认值）----
 
     public int getInt(String key) {
         return getInt(key, Integer.parseInt(DEFAULT_SETTINGS.get(key)));

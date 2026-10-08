@@ -14,7 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * 公共模板变量（对应 Python 版 @app.context_processor inject_globals）：
+ * 公共模板变量：
  * 每个页面都能拿到系统设置、导航徽标数、CSRF 令牌等。
  */
 @ControllerAdvice
@@ -70,8 +70,7 @@ public class GlobalModelAdvice {
     }
 
     /**
-     * 翻页链接助手：保留当前查询条件，只替换 page 参数
-     * （对应 Python 版模板全局 page_url()）。
+     * 翻页链接助手：保留当前查询条件，只替换 page 参数。
      */
     public static class PageUrl {
         public String of(int targetPage) {
