@@ -2,8 +2,8 @@
 #  GitHub Actions：每次 push / 提 PR 都自动跑一遍测试
 #  分两层：
 #    1) 单元测试：mvnw test，不连数据库，含并发扣减回归用例
-#    2) 端到端检查：GitHub 起一个真 MySQL，启动应用跑 30 项冒烟
-#       + 18 项读者端全流程
+#    2) 端到端检查：GitHub 起一个真 MySQL，启动应用跑 39 项冒烟
+#       + 22 项读者端全流程
 # ============================================================
 name: CI
 
@@ -76,10 +76,10 @@ jobs:
       - name: 安装测试依赖
         run: pip install requests
 
-      - name: 冒烟检查（30 项）
+      - name: 冒烟检查（39 项）
         run: python tests/smoke_test.py http://127.0.0.1:8080 123456 admin
 
-      - name: 读者端全流程（18 项）
+      - name: 读者端全流程（22 项）
         run: python tests/reader_e2e.py
 
       - name: 失败时打印应用日志
