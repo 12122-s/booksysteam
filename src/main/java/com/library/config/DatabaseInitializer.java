@@ -184,9 +184,11 @@ public class DatabaseInitializer implements ApplicationRunner {
     private String password;
 
     private final JdbcTemplate jdbc;
+    private final SettingsService settings;
 
-    public DatabaseInitializer(JdbcTemplate jdbc) {
+    public DatabaseInitializer(JdbcTemplate jdbc, SettingsService settings) {
         this.jdbc = jdbc;
+        this.settings = settings;
     }
 
     private static final org.slf4j.Logger log =
@@ -201,6 +203,11 @@ public class DatabaseInitializer implements ApplicationRunner {
         ensureColumns();
         ensureIndexes();
         seedDefaultSettings();
+        // 本类实现 ApplicationRunner，跑在 Web 容器已经就绪之后：这期间到达的请求
+        // （比如探活的 /health）会经 GlobalModelAdvice 读一次设置，把「还没有
+        // admin_password_hash」的快照缓存住。种子数据写完必须清掉这个缓存，
+        // 否则紧随其后的登录会拿到空哈希、被判成密码错误。
+        settings.evict();
         log.info("数据库初始化完成：建表 {} 张、补字段/索引 {} 项（已存在的自动跳过）",
                 SCHEMA.size(), ENSURE_COLUMNS.size() + WANTED_INDEXES.size());
     }
