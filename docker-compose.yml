@@ -1,28 +1,65 @@
 # ============================================================
 # Java 版图书管理系统 · 并行试用（Docker）
-#   - 独立新库 library_java，服务器上 Python 版用的 library_system 不受影响
-#   - 宿主机端口 8081（Python 版占 8080）
-#   - network_mode: host 让容器直接连宿主机的 MySQL（127.0.0.1:3306），
-#     也避免给 MySQL 开远程账号；对外直接监听 8081
+#
+#   - 自带一个独立的 MySQL（数据和宿主机的宝塔 MySQL 完全隔开）
+#   - 宿主机端口 8081（Python 版占 8080），独立库 library_java
+#   - 应用用「专用账号」连库，而不是 root（最小权限原则）
 #
 # 用法（在服务器的 ~/library-java 目录下）：
-#   1) 把下面 LIB_DB_PASSWORD 改成虚拟机 MySQL 的 root 密码
-#   2) docker compose up -d --build
-#   3) 浏览器打开 http://服务器IP:8081   管理员 admin / 初始密码 123456
-#   看日志：docker logs -f library-java
-#   停止：  docker compose down
+#   docker compose up -d --build
+#   浏览器打开 http://服务器IP:8081      管理员 admin / 初始密码 123456
+#   看日志：docker compose logs -f library-java
+#   停止：  docker compose down            （数据保留在 ./dbdata）
+#
+# 想改密码：复制 .env.example 为 .env，在里面设 LIB_DB_PASSWORD 等变量。
+# 注意：MySQL 的账号密码只在「数据目录第一次初始化」时生效，
+#       改了 compose 但对已有的 ./dbdata 不生效 —— 要么手动改库里的账号，
+#       要么删掉 ./dbdata 重新初始化（会清空数据）。
 # ============================================================
 services:
+  # ---------------- 数据库 ----------------
+  library-db:
+    image: mysql:8.0
+    container_name: library-java-db
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root-dev-pwd}"
+      MYSQL_DATABASE: library_java
+      # 应用专用的账号：只有 library_java 这一个库的权限，比用 root 安全得多
+      MYSQL_USER: library_java
+      MYSQL_PASSWORD: "${LIB_DB_PASSWORD:-library-java-dev-pwd}"
+      TZ: Asia/Shanghai
+    volumes:
+      # 数据放在宿主机的 ./dbdata 下，看得见、方便备份
+      - ./dbdata:/var/lib/mysql
+    # 健康检查：容器里能 ping 通 MySQL 才算"起来了"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  # ---------------- 应用 ----------------
   library-java:
     build: .
     container_name: library-java
-    network_mode: host
+    depends_on:
+      library-db:
+        # 关键：等 MySQL 真的能连了再启动应用，避免启动即报错、
+        # 然后靠 restart 反复重启（Python 版用的是同一种写法）
+        condition: service_healthy
+    ports:
+      - "8081:8081"
     environment:
-      LIB_DB_HOST: 127.0.0.1
+      LIB_DB_HOST: library-db
       LIB_DB_PORT: "3306"
-      LIB_DB_USER: root
-      LIB_DB_PASSWORD: "你的MySQL密码"      # <-- 改这里
-      LIB_DB_NAME: library_java             # 并行试用专用新库，Python 版用的是 library_system
+      LIB_DB_USER: library_java
+      LIB_DB_PASSWORD: "${LIB_DB_PASSWORD:-library-java-dev-pwd}"
+      LIB_DB_NAME: library_java
       SERVER_PORT: "8081"
       TZ: Asia/Shanghai
     volumes:

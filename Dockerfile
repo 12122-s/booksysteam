@@ -9,5 +9,8 @@ ENV TZ=Asia/Shanghai
 COPY target/booksysteam-1.0.0.jar app.jar
 
 # 封面/收款码上传目录、自动备份目录建议用 docker compose 的 volumes 挂出来
-EXPOSE 8080
+#
+# 实际监听端口由 SERVER_PORT 环境变量决定（docker-compose.yml 里设的是 8081），
+# 这一行只是说明性标注，跟真实端口无关，改 compose 时不用同步改这里。
+EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
