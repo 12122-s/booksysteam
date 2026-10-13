@@ -1,0 +1,16 @@
+# 统一换行符：仓库内一律 LF，Windows 上也不产生 CRLF 噪音
+* text=auto eol=lf
+
+# Windows 批处理必须是 CRLF，否则 cmd 解析异常
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# 二进制文件不做换行转换
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.xlsx binary

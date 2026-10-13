@@ -41,16 +41,9 @@ target/
 uploads/
 backups/
 
-### Docker Compose 里 MySQL 的数据目录（整个库都在里面，体积大且含读者个人信息）###
-dbdata/
-
 ### 敏感配置：真实密码只写本地 .env，绝不提交 ###
 .env
 .env.local
-
-### 个人材料：简历 / 面试准备笔记，不进仓库 ###
-docs/简历-项目经历.md
-
 
 ### IDEA 工程文件 ###
 .idea/
